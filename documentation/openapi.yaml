@@ -1,0 +1,3230 @@
+openapi: 3.1.0
+info:
+  title: InvestInsight API
+  description: |
+    Portfolio Reporting & Data Stewardship Platform API.
+
+    This API provides access to the InvestInsight SQL Server database for:
+    - Master data management (instruments, portfolios, asset managers)
+    - Reference data (currencies, countries, indexes, benchmarks)
+    - Workflow management (report batches, approvals)
+    - File processing status
+    - Risk metrics and calculations
+
+    **Authentication**: External (AD/LDAP) - see /auth endpoints
+    **Audit**: Temporal tables provide automatic history - use ?asOf parameter for point-in-time queries
+  version: 1.0.0
+  contact:
+    name: Investment Operations
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Development server
+  - url: https://investinsight.example.com/api/v1
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Authentication and authorization (external AD/LDAP integration)
+  - name: Users
+    description: User management and lifecycle
+  - name: Roles
+    description: Role and permission management
+  - name: ApprovalAuthority
+    description: Configure approval authorities at each level
+  - name: ReportBatches
+    description: Workflow batches for monthly/weekly reporting
+  - name: Approvals
+    description: Multi-level approval workflow
+  - name: Instruments
+    description: Instrument master data management
+  - name: Portfolios
+    description: Portfolio master data
+  - name: AssetManagers
+    description: Asset manager reference data
+  - name: Holdings
+    description: Portfolio holdings per batch
+  - name: CreditRatings
+    description: Instrument credit ratings
+  - name: RiskMetrics
+    description: Duration, YTM, and Beta metrics
+  - name: IndexPrices
+    description: Benchmark index pricing
+  - name: Files
+    description: File processing and status
+  - name: ReferenceData
+    description: Currencies, countries, benchmarks, indexes
+  - name: Calculations
+    description: Calculated results (performance, fees)
+  - name: Audit
+    description: Audit trail access
+
+paths:
+  # ============================================
+  # AUTHENTICATION (External AD/LDAP)
+  # ============================================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user
+      description: Authenticate against external directory (AD/LDAP)
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user info
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+              required: [refreshToken]
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  # ============================================
+  # USER MANAGEMENT
+  # ============================================
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search by username, display name, or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Users]
+      summary: Create user
+      operationId: createUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '400':
+          description: Validation error (e.g., username already exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user details
+      operationId: getUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User details with roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Users]
+      summary: Update user
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{id}/deactivate:
+    post:
+      tags: [Users]
+      summary: Deactivate user
+      description: Soft delete - user cannot be hard deleted per audit requirements
+      operationId: deactivateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}/reactivate:
+    post:
+      tags: [Users]
+      summary: Reactivate user
+      operationId: reactivateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}/roles:
+    get:
+      tags: [Users]
+      summary: Get user roles
+      operationId: getUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User's assigned roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+    put:
+      tags: [Users]
+      summary: Update user roles
+      description: Replace all user roles with the provided list
+      operationId: updateUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: integer
+              required: [roleIds]
+      responses:
+        '200':
+          description: Roles updated
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}/activity:
+    get:
+      tags: [Users, Audit]
+      summary: Get user activity log
+      operationId: getUserActivity
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: User activity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActivityList'
+
+  /users/{id}/history:
+    get:
+      tags: [Users, Audit]
+      summary: Get user change history
+      operationId: getUserHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User change history from temporal table
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserHistoryEntry'
+
+  # ============================================
+  # ROLES AND PERMISSIONS
+  # ============================================
+  /roles:
+    get:
+      tags: [Roles]
+      summary: List roles
+      operationId: listRoles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All roles with permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleWithPermissions'
+
+    post:
+      tags: [Roles]
+      summary: Create custom role
+      description: System roles cannot be created, only custom roles
+      operationId: createRole
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWithPermissions'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /roles/{id}:
+    get:
+      tags: [Roles]
+      summary: Get role details
+      operationId: getRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Role with permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWithPermissions'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Roles]
+      summary: Update role permissions
+      description: System roles can have permissions modified but not deleted
+      operationId: updateRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWithPermissions'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /permissions:
+    get:
+      tags: [Roles]
+      summary: List all permissions
+      operationId: listPermissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All available permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+
+  # ============================================
+  # APPROVAL AUTHORITY
+  # ============================================
+  /approval-authorities:
+    get:
+      tags: [ApprovalAuthority]
+      summary: List approval authorities
+      operationId: listApprovalAuthorities
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Approval authorities by level
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApprovalAuthorityEntry'
+
+    post:
+      tags: [ApprovalAuthority]
+      summary: Assign approval authority
+      operationId: assignApprovalAuthority
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApprovalAuthorityRequest'
+      responses:
+        '201':
+          description: Authority assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalAuthorityEntry'
+        '400':
+          description: Validation error (e.g., user cannot approve own work)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /approval-authorities/{id}:
+    delete:
+      tags: [ApprovalAuthority]
+      summary: Remove approval authority
+      operationId: removeApprovalAuthority
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: Authority removed
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /approval-authorities/by-level/{level}:
+    get:
+      tags: [ApprovalAuthority]
+      summary: Get approvers for a specific level
+      operationId: getApproversByLevel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: level
+          in: path
+          required: true
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+      responses:
+        '200':
+          description: Primary and backup approvers for the level
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  level:
+                    type: integer
+                  primary:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApproverSummary'
+                  backup:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApproverSummary'
+
+  # ============================================
+  # REPORT BATCHES (Workflow)
+  # ============================================
+  /report-batches:
+    get:
+      tags: [ReportBatches]
+      summary: List report batches
+      operationId: listReportBatches
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [Monthly, Weekly]
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DataPreparation, Level1Pending, Level2Pending, Level3Pending, Approved, Rejected]
+      responses:
+        '200':
+          description: List of report batches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportBatchList'
+
+    post:
+      tags: [ReportBatches]
+      summary: Create new report batch
+      operationId: createReportBatch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReportBatchRequest'
+      responses:
+        '201':
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportBatch'
+
+  /report-batches/{id}:
+    get:
+      tags: [ReportBatches]
+      summary: Get report batch details
+      operationId: getReportBatch
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Batch details with status summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportBatchDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /report-batches/{id}/status:
+    get:
+      tags: [ReportBatches]
+      summary: Get batch workflow status
+      description: Returns current workflow state, approval status, and data completeness
+      operationId: getReportBatchStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Workflow status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchWorkflowStatus'
+
+  /report-batches/{id}/validation:
+    get:
+      tags: [ReportBatches]
+      summary: Get data validation summary
+      description: Returns completeness checks for files, portfolios, and reference data
+      operationId: getBatchValidation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchValidationResult'
+
+  /report-batches/{id}/confirm:
+    post:
+      tags: [ReportBatches]
+      summary: Confirm data preparation complete
+      description: Locks data entry and initiates calculations
+      operationId: confirmBatch
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Batch confirmed, calculations initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportBatch'
+
+  # ============================================
+  # APPROVALS
+  # ============================================
+  /report-batches/{id}/approvals:
+    get:
+      tags: [Approvals]
+      summary: Get approval history for batch
+      operationId: getBatchApprovals
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Approval history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApprovalLogEntry'
+
+    post:
+      tags: [Approvals]
+      summary: Submit approval decision
+      operationId: submitApproval
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequest'
+      responses:
+        '200':
+          description: Approval recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalLogEntry'
+        '400':
+          description: Invalid approval (wrong level, already approved, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================
+  # INSTRUMENTS
+  # ============================================
+  /instruments:
+    get:
+      tags: [Instruments]
+      summary: List instruments
+      operationId: listInstruments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - $ref: '#/components/parameters/AsOfParam'
+        - name: search
+          in: query
+          description: Search by ISIN, code, or name
+          schema:
+            type: string
+        - name: securityType
+          in: query
+          schema:
+            type: string
+        - name: countryId
+          in: query
+          schema:
+            type: integer
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Paginated list of instruments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentList'
+
+    post:
+      tags: [Instruments]
+      summary: Create instrument
+      operationId: createInstrument
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInstrumentRequest'
+      responses:
+        '201':
+          description: Instrument created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+
+  /instruments/{id}:
+    get:
+      tags: [Instruments]
+      summary: Get instrument details
+      operationId: getInstrument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/AsOfParam'
+      responses:
+        '200':
+          description: Instrument details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Instruments]
+      summary: Update instrument
+      operationId: updateInstrument
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInstrumentRequest'
+      responses:
+        '200':
+          description: Instrument updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instrument'
+
+  /instruments/{id}/history:
+    get:
+      tags: [Instruments, Audit]
+      summary: Get instrument change history
+      operationId: getInstrumentHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Change history from temporal table
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstrumentHistoryEntry'
+
+  /instruments/export:
+    get:
+      tags: [Instruments]
+      summary: Export instruments to Excel
+      operationId: exportInstruments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [xlsx, csv]
+            default: xlsx
+        - name: missingOnly
+          in: query
+          description: Export only instruments missing required data
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  # ============================================
+  # PORTFOLIOS
+  # ============================================
+  /portfolios:
+    get:
+      tags: [Portfolios]
+      summary: List portfolios
+      operationId: listPortfolios
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: assetManagerId
+          in: query
+          schema:
+            type: integer
+        - name: currencyId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of portfolios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioList'
+
+    post:
+      tags: [Portfolios]
+      summary: Create portfolio
+      operationId: createPortfolio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePortfolioRequest'
+      responses:
+        '201':
+          description: Portfolio created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Portfolio'
+
+  /portfolios/{id}:
+    get:
+      tags: [Portfolios]
+      summary: Get portfolio details
+      operationId: getPortfolio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Portfolio details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Portfolio'
+
+    put:
+      tags: [Portfolios]
+      summary: Update portfolio
+      operationId: updatePortfolio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePortfolioRequest'
+      responses:
+        '200':
+          description: Portfolio updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Portfolio'
+
+  # ============================================
+  # HOLDINGS
+  # ============================================
+  /report-batches/{batchId}/holdings:
+    get:
+      tags: [Holdings]
+      summary: List holdings for a batch
+      operationId: listHoldings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: portfolioId
+          in: query
+          schema:
+            type: integer
+        - name: instrumentId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Holdings list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoldingList'
+
+  /report-batches/{batchId}/holdings/custom:
+    post:
+      tags: [Holdings]
+      summary: Add custom holding
+      description: Manually add holding not from automated feeds
+      operationId: createCustomHolding
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomHoldingRequest'
+      responses:
+        '201':
+          description: Custom holding created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Holding'
+
+  # ============================================
+  # CREDIT RATINGS
+  # ============================================
+  /report-batches/{batchId}/credit-ratings:
+    get:
+      tags: [CreditRatings]
+      summary: List credit ratings for batch
+      operationId: listCreditRatings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: instrumentId
+          in: query
+          schema:
+            type: integer
+        - name: missingOnly
+          in: query
+          description: Only return instruments missing ratings
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Credit ratings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRatingList'
+
+  /report-batches/{batchId}/credit-ratings/{id}:
+    put:
+      tags: [CreditRatings]
+      summary: Update credit rating
+      operationId: updateCreditRating
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreditRatingRequest'
+      responses:
+        '200':
+          description: Rating updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRating'
+
+  /report-batches/{batchId}/credit-ratings/changes:
+    get:
+      tags: [CreditRatings]
+      summary: Get rating changes vs previous batch
+      operationId: getCreditRatingChanges
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: changeType
+          in: query
+          schema:
+            type: string
+            enum: [upgrade, downgrade, all]
+            default: all
+      responses:
+        '200':
+          description: Rating changes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRatingChangeList'
+
+  # ============================================
+  # RISK METRICS (Duration, Beta)
+  # ============================================
+  /report-batches/{batchId}/instrument-durations:
+    get:
+      tags: [RiskMetrics]
+      summary: List instrument durations for batch
+      operationId: listInstrumentDurations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: missingOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Duration metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentDurationList'
+
+    post:
+      tags: [RiskMetrics]
+      summary: Create/update instrument duration
+      operationId: upsertInstrumentDuration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertInstrumentDurationRequest'
+      responses:
+        '200':
+          description: Duration saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentDuration'
+
+  /report-batches/{batchId}/instrument-betas:
+    get:
+      tags: [RiskMetrics]
+      summary: List instrument betas for batch
+      operationId: listInstrumentBetas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: missingOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Beta metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentBetaList'
+
+    post:
+      tags: [RiskMetrics]
+      summary: Create/update instrument beta
+      operationId: upsertInstrumentBeta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertInstrumentBetaRequest'
+      responses:
+        '200':
+          description: Beta saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstrumentBeta'
+
+  # ============================================
+  # INDEX PRICES
+  # ============================================
+  /report-batches/{batchId}/index-prices:
+    get:
+      tags: [IndexPrices]
+      summary: List index prices for batch
+      operationId: listIndexPrices
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: missingOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Index prices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexPriceList'
+
+    post:
+      tags: [IndexPrices]
+      summary: Create/update index price
+      operationId: upsertIndexPrice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertIndexPriceRequest'
+      responses:
+        '200':
+          description: Price saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexPrice'
+
+  /report-batches/{batchId}/index-prices/bulk:
+    post:
+      tags: [IndexPrices]
+      summary: Bulk upload index prices
+      operationId: bulkUploadIndexPrices
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpsertIndexPriceRequest'
+      responses:
+        '200':
+          description: Prices saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        indexId:
+                          type: integer
+                        error:
+                          type: string
+
+  # ============================================
+  # FILES
+  # ============================================
+  /report-batches/{batchId}/files:
+    get:
+      tags: [Files]
+      summary: Get file status for batch
+      operationId: getBatchFileStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: File status by source and type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchFileStatus'
+
+  /report-batches/{batchId}/files/upload:
+    post:
+      tags: [Files]
+      summary: Upload file manually
+      operationId: uploadFile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                fileSettingId:
+                  type: integer
+              required: [file, fileSettingId]
+      responses:
+        '202':
+          description: File accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+
+  /file-settings:
+    get:
+      tags: [Files]
+      summary: List file settings
+      operationId: listFileSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sourceId
+          in: query
+          schema:
+            type: integer
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: File settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileSetting'
+
+  /file-logs:
+    get:
+      tags: [Files]
+      summary: List file processing logs
+      operationId: listFileLogs
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: batchId
+          in: query
+          schema:
+            type: integer
+        - name: isValid
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: File logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileLogList'
+
+  # ============================================
+  # REFERENCE DATA
+  # ============================================
+  /asset-managers:
+    get:
+      tags: [AssetManagers]
+      summary: List asset managers
+      operationId: listAssetManagers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Asset managers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssetManager'
+
+    post:
+      tags: [AssetManagers]
+      summary: Create asset manager
+      operationId: createAssetManager
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssetManagerRequest'
+      responses:
+        '201':
+          description: Asset manager created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetManager'
+
+  /currencies:
+    get:
+      tags: [ReferenceData]
+      summary: List currencies
+      operationId: listCurrencies
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Currencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Currency'
+
+  /countries:
+    get:
+      tags: [ReferenceData]
+      summary: List countries
+      operationId: listCountries
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Countries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Country'
+
+  /indexes:
+    get:
+      tags: [ReferenceData]
+      summary: List indexes
+      operationId: listIndexes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Indexes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Index'
+
+  /benchmarks:
+    get:
+      tags: [ReferenceData]
+      summary: List benchmarks
+      operationId: listBenchmarks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Benchmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Benchmark'
+
+  /credit-rating-scales:
+    get:
+      tags: [ReferenceData]
+      summary: List credit rating scales
+      operationId: listCreditRatingScales
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Rating scales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditRatingScale'
+
+  # ============================================
+  # CALCULATIONS
+  # ============================================
+  /report-batches/{batchId}/calculations:
+    get:
+      tags: [Calculations]
+      summary: Get calculation status
+      operationId: getCalculationStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Calculation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationStatus'
+
+    post:
+      tags: [Calculations]
+      summary: Trigger calculations
+      operationId: triggerCalculations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '202':
+          description: Calculations initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  workflowInstanceId:
+                    type: string
+
+  /report-batches/{batchId}/calculations/errors:
+    get:
+      tags: [Calculations]
+      summary: Get calculation errors
+      operationId: getCalculationErrors
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Calculation errors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalculationError'
+
+  # ============================================
+  # REPORT COMMENTS
+  # ============================================
+  /report-batches/{batchId}/comments:
+    get:
+      tags: [ReportBatches]
+      summary: List report comments
+      operationId: listReportComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportComment'
+
+    post:
+      tags: [ReportBatches]
+      summary: Add report comment
+      operationId: addReportComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReportCommentRequest'
+      responses:
+        '201':
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportComment'
+
+  # ============================================
+  # AUDIT
+  # ============================================
+  /audit/changes:
+    get:
+      tags: [Audit]
+      summary: Query audit trail
+      operationId: queryAuditTrail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Instrument, Portfolio, AssetManager, Currency, Country, Index, CreditRating, InstrumentDuration, InstrumentBeta, IndexPrice]
+        - name: entityId
+          in: query
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: user
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditTrailList'
+
+  /audit/export:
+    get:
+      tags: [Audit]
+      summary: Export audit trail
+      operationId: exportAuditTrail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: entityType
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Excel export
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    PageSizeParam:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    AsOfParam:
+      name: asOf
+      in: query
+      description: Point-in-time query for temporal tables
+      schema:
+        type: string
+        format: date-time
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ============================================
+    # Common
+    # ============================================
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+      required: [code, message]
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+
+    # ============================================
+    # Auth
+    # ============================================
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [OperationsLead, Analyst, ApproverL1, ApproverL2, ApproverL3, Administrator, ReadOnly]
+        permissions:
+          type: array
+          items:
+            type: string
+
+    # ============================================
+    # User Management
+    # ============================================
+    UserDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        lastChangedUser:
+          type: string
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+
+    UserList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserDetail'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 100
+        displayName:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+        roleIds:
+          type: array
+          items:
+            type: integer
+      required: [username, displayName]
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+
+    UserHistoryEntry:
+      allOf:
+        - $ref: '#/components/schemas/UserDetail'
+        - type: object
+          properties:
+            changeType:
+              type: string
+              enum: [Created, Updated, Deactivated, Reactivated]
+
+    UserActivity:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        entityType:
+          type: string
+          nullable: true
+        entityId:
+          type: integer
+          nullable: true
+        details:
+          type: string
+          nullable: true
+        ipAddress:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+
+    UserActivityList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserActivity'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ============================================
+    # Roles and Permissions
+    # ============================================
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        isSystemRole:
+          type: boolean
+
+    RoleWithPermissions:
+      allOf:
+        - $ref: '#/components/schemas/Role'
+        - type: object
+          properties:
+            permissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Permission'
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        category:
+          type: string
+
+    CreateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 500
+        permissionIds:
+          type: array
+          items:
+            type: integer
+      required: [name, permissionIds]
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 500
+        permissionIds:
+          type: array
+          items:
+            type: integer
+      required: [permissionIds]
+
+    # ============================================
+    # Approval Authority
+    # ============================================
+    ApprovalAuthorityEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        approvalLevel:
+          type: integer
+          enum: [1, 2, 3]
+        isBackup:
+          type: boolean
+        isActive:
+          type: boolean
+        effectiveFrom:
+          type: string
+          format: date
+        effectiveTo:
+          type: string
+          format: date
+          nullable: true
+        assignedBy:
+          type: string
+        assignedAt:
+          type: string
+          format: date-time
+
+    CreateApprovalAuthorityRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        approvalLevel:
+          type: integer
+          enum: [1, 2, 3]
+        isBackup:
+          type: boolean
+          default: false
+        effectiveFrom:
+          type: string
+          format: date
+        effectiveTo:
+          type: string
+          format: date
+      required: [userId, approvalLevel, effectiveFrom]
+
+    ApproverSummary:
+      type: object
+      properties:
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          nullable: true
+
+    # ============================================
+    # Report Batch
+    # ============================================
+    ReportBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchType:
+          type: string
+          enum: [Monthly, Weekly]
+        reportDate:
+          type: string
+          format: date
+        workflowInstanceId:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [DataPreparation, Level1Pending, Level2Pending, Level3Pending, Approved, Rejected]
+
+    ReportBatchDetail:
+      allOf:
+        - $ref: '#/components/schemas/ReportBatch'
+        - type: object
+          properties:
+            fileStatus:
+              $ref: '#/components/schemas/BatchFileStatusSummary'
+            dataCompleteness:
+              $ref: '#/components/schemas/DataCompletenessSummary'
+            approvalHistory:
+              type: array
+              items:
+                $ref: '#/components/schemas/ApprovalLogEntry'
+            calculationStatus:
+              $ref: '#/components/schemas/CalculationStatusSummary'
+
+    ReportBatchList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportBatch'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateReportBatchRequest:
+      type: object
+      properties:
+        reportBatchType:
+          type: string
+          enum: [Monthly, Weekly]
+        reportDate:
+          type: string
+          format: date
+      required: [reportBatchType, reportDate]
+
+    BatchWorkflowStatus:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        currentStage:
+          type: string
+        isLocked:
+          type: boolean
+        canConfirm:
+          type: boolean
+        canApprove:
+          type: boolean
+        pendingApprovalLevel:
+          type: integer
+          nullable: true
+        lastUpdated:
+          type: string
+          format: date-time
+
+    BatchValidationResult:
+      type: object
+      properties:
+        isComplete:
+          type: boolean
+        fileCompleteness:
+          type: object
+          properties:
+            expected:
+              type: integer
+            received:
+              type: integer
+            valid:
+              type: integer
+            failed:
+              type: integer
+        portfolioDataCompleteness:
+          type: array
+          items:
+            type: object
+            properties:
+              portfolioId:
+                type: integer
+              portfolioName:
+                type: string
+              holdings:
+                type: boolean
+              transactions:
+                type: boolean
+              income:
+                type: boolean
+              cash:
+                type: boolean
+              performance:
+                type: boolean
+        referenceDataCompleteness:
+          type: object
+          properties:
+            instrumentsMissingRatings:
+              type: integer
+            instrumentsMissingDurations:
+              type: integer
+            instrumentsMissingBetas:
+              type: integer
+            missingIndexPrices:
+              type: integer
+
+    BatchFileStatusSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        received:
+          type: integer
+        valid:
+          type: integer
+        failed:
+          type: integer
+        pending:
+          type: integer
+
+    DataCompletenessSummary:
+      type: object
+      properties:
+        portfoliosComplete:
+          type: integer
+        portfoliosIncomplete:
+          type: integer
+        missingRatings:
+          type: integer
+        missingDurations:
+          type: integer
+        missingBetas:
+          type: integer
+        missingIndexPrices:
+          type: integer
+
+    CalculationStatusSummary:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [NotStarted, InProgress, Completed, Failed]
+        completedCount:
+          type: integer
+        failedCount:
+          type: integer
+
+    # ============================================
+    # Approvals
+    # ============================================
+    ApprovalLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        type:
+          type: string
+          enum: [Level1, Level2, Level3]
+        isApproved:
+          type: boolean
+        user:
+          type: string
+        time:
+          type: string
+          format: date-time
+        rejectReason:
+          type: string
+          nullable: true
+
+    ApprovalRequest:
+      type: object
+      properties:
+        level:
+          type: integer
+          enum: [1, 2, 3]
+        isApproved:
+          type: boolean
+        rejectReason:
+          type: string
+          description: Required if isApproved is false
+      required: [level, isApproved]
+
+    # ============================================
+    # Instrument
+    # ============================================
+    Instrument:
+      type: object
+      properties:
+        id:
+          type: integer
+        isin:
+          type: string
+          nullable: true
+        instrumentCode:
+          type: string
+          nullable: true
+        bloombergTicker:
+          type: string
+          nullable: true
+        cusip:
+          type: string
+          nullable: true
+        sedol:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        shortName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        ticker:
+          type: string
+          nullable: true
+        parentCompanyName:
+          type: string
+          nullable: true
+        securityType:
+          type: string
+          nullable: true
+        securitySubType:
+          type: string
+          nullable: true
+        marketSector:
+          type: string
+          nullable: true
+        securityClass:
+          type: string
+          nullable: true
+        issuerIndustry:
+          type: string
+          nullable: true
+        countryId:
+          type: integer
+          nullable: true
+        quotedCurrencyId:
+          type: integer
+          nullable: true
+        amountIssued:
+          type: number
+          nullable: true
+        couponType:
+          type: string
+          nullable: true
+        coupon:
+          type: number
+          nullable: true
+        couponFrequency:
+          type: string
+          nullable: true
+        issueDate:
+          type: string
+          format: date
+          nullable: true
+        maturityDate:
+          type: string
+          format: date
+          nullable: true
+        issuerName:
+          type: string
+          nullable: true
+        issuerCode:
+          type: string
+          nullable: true
+        isCashEquivalent:
+          type: boolean
+          nullable: true
+        lastChangedUser:
+          type: string
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+
+    InstrumentList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instrument'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateInstrumentRequest:
+      type: object
+      properties:
+        isin:
+          type: string
+        instrumentCode:
+          type: string
+        name:
+          type: string
+        securityType:
+          type: string
+        countryId:
+          type: integer
+        quotedCurrencyId:
+          type: integer
+      required: [name]
+
+    UpdateInstrumentRequest:
+      type: object
+      properties:
+        isin:
+          type: string
+        instrumentCode:
+          type: string
+        name:
+          type: string
+        securityType:
+          type: string
+        countryId:
+          type: integer
+        quotedCurrencyId:
+          type: integer
+        maturityDate:
+          type: string
+          format: date
+        coupon:
+          type: number
+        issuerName:
+          type: string
+
+    InstrumentHistoryEntry:
+      allOf:
+        - $ref: '#/components/schemas/Instrument'
+        - type: object
+          properties:
+            changeType:
+              type: string
+              enum: [Created, Updated]
+
+    # ============================================
+    # Portfolio
+    # ============================================
+    Portfolio:
+      type: object
+      properties:
+        id:
+          type: integer
+        assetManagerId:
+          type: integer
+        externalCode:
+          type: string
+        externalName:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        currencyId:
+          type: integer
+        mandate:
+          type: string
+        mandateAppointedDate:
+          type: string
+          format: date
+        mandateInceptionDate:
+          type: string
+          format: date
+        objective:
+          type: string
+        fundStyle:
+          type: string
+        benchmarkId:
+          type: integer
+        minimumAcceptableReturnIndexId:
+          type: integer
+        lastChangedUser:
+          type: string
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+
+    PortfolioList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Portfolio'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreatePortfolioRequest:
+      type: object
+      properties:
+        assetManagerId:
+          type: integer
+        externalCode:
+          type: string
+        externalName:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        currencyId:
+          type: integer
+        mandate:
+          type: string
+        objective:
+          type: string
+        benchmarkId:
+          type: integer
+      required: [assetManagerId, code, name, currencyId, mandate, benchmarkId]
+
+    UpdatePortfolioRequest:
+      type: object
+      properties:
+        externalCode:
+          type: string
+        externalName:
+          type: string
+        name:
+          type: string
+        mandate:
+          type: string
+        objective:
+          type: string
+        benchmarkId:
+          type: integer
+
+    # ============================================
+    # Holding
+    # ============================================
+    Holding:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        portfolioId:
+          type: integer
+        instrumentId:
+          type: integer
+          nullable: true
+        valuationDate:
+          type: string
+          format: date
+        portfolioBaseCurrencyId:
+          type: integer
+        holdingNominal:
+          type: number
+        baseMarketValue:
+          type: number
+        baseBookValue:
+          type: number
+        baseUnrealisedProfitLoss:
+          type: number
+
+    HoldingList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Holding'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateCustomHoldingRequest:
+      type: object
+      properties:
+        portfolioId:
+          type: integer
+        instrumentId:
+          type: integer
+        valuationDate:
+          type: string
+          format: date
+        holdingNominal:
+          type: number
+        baseMarketValue:
+          type: number
+      required: [portfolioId, instrumentId, valuationDate, holdingNominal, baseMarketValue]
+
+    # ============================================
+    # Credit Rating
+    # ============================================
+    CreditRating:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        instrumentId:
+          type: integer
+        bbCompRating:
+          type: string
+          nullable: true
+        fitchRating:
+          type: string
+          nullable: true
+        moodysRating:
+          type: string
+          nullable: true
+        sandPRating:
+          type: string
+          nullable: true
+        fmInstrumentRating:
+          type: string
+          nullable: true
+        fmIssuerRating:
+          type: string
+          nullable: true
+        finalRatingNationalSource:
+          type: string
+          nullable: true
+        finalRatingNational:
+          type: string
+          nullable: true
+        finalRatingInternationalSource:
+          type: string
+          nullable: true
+        finalRatingInternational:
+          type: string
+          nullable: true
+        userNote:
+          type: string
+          nullable: true
+        lastChangedUser:
+          type: string
+
+    CreditRatingList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditRating'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    UpdateCreditRatingRequest:
+      type: object
+      properties:
+        fmInstrumentRating:
+          type: string
+        fmIssuerRating:
+          type: string
+        userNote:
+          type: string
+
+    CreditRatingChange:
+      type: object
+      properties:
+        instrumentId:
+          type: integer
+        instrumentName:
+          type: string
+        isin:
+          type: string
+        previousRating:
+          type: string
+        currentRating:
+          type: string
+        changeType:
+          type: string
+          enum: [Upgrade, Downgrade]
+        ratingType:
+          type: string
+          enum: [National, International]
+
+    CreditRatingChangeList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditRatingChange'
+        summary:
+          type: object
+          properties:
+            upgrades:
+              type: integer
+            downgrades:
+              type: integer
+
+    # ============================================
+    # Risk Metrics
+    # ============================================
+    InstrumentDuration:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        instrumentId:
+          type: integer
+        modifiedDuration:
+          type: number
+          nullable: true
+        yieldToMaturity:
+          type: number
+          nullable: true
+        lastChangedUser:
+          type: string
+
+    InstrumentDurationList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstrumentDuration'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        outstandingCount:
+          type: integer
+
+    UpsertInstrumentDurationRequest:
+      type: object
+      properties:
+        instrumentId:
+          type: integer
+        modifiedDuration:
+          type: number
+        yieldToMaturity:
+          type: number
+      required: [instrumentId]
+
+    InstrumentBeta:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        instrumentId:
+          type: integer
+        beta:
+          type: number
+        lastChangedUser:
+          type: string
+
+    InstrumentBetaList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstrumentBeta'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        outstandingCount:
+          type: integer
+
+    UpsertInstrumentBetaRequest:
+      type: object
+      properties:
+        instrumentId:
+          type: integer
+        beta:
+          type: number
+      required: [instrumentId, beta]
+
+    # ============================================
+    # Index Price
+    # ============================================
+    IndexPrice:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        indexId:
+          type: integer
+        price:
+          type: number
+        lastChangedUser:
+          type: string
+
+    IndexPriceList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndexPrice'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        outstandingCount:
+          type: integer
+
+    UpsertIndexPriceRequest:
+      type: object
+      properties:
+        indexId:
+          type: integer
+        price:
+          type: number
+      required: [indexId, price]
+
+    # ============================================
+    # Files
+    # ============================================
+    BatchFileStatus:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              sourceId:
+                type: integer
+              sourceName:
+                type: string
+              files:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    fileSettingId:
+                      type: integer
+                    fileType:
+                      type: string
+                    status:
+                      type: string
+                      enum: [Pending, Processing, Valid, Failed]
+                    fileName:
+                      type: string
+                      nullable: true
+                    recordCount:
+                      type: integer
+                      nullable: true
+                    error:
+                      type: string
+                      nullable: true
+
+    FileSetting:
+      type: object
+      properties:
+        id:
+          type: integer
+        fileSourceId:
+          type: integer
+        fileTypeId:
+          type: integer
+        fileName:
+          type: string
+        folder:
+          type: string
+        isActive:
+          type: boolean
+        frequency:
+          type: string
+
+    FileLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        fileSettingId:
+          type: integer
+        folder:
+          type: string
+        fileName:
+          type: string
+        recordCount:
+          type: integer
+          nullable: true
+        isValid:
+          type: boolean
+
+    FileLogList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileLog'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    FileUploadResponse:
+      type: object
+      properties:
+        fileLogId:
+          type: integer
+        status:
+          type: string
+          enum: [Accepted, Processing]
+        message:
+          type: string
+
+    # ============================================
+    # Reference Data
+    # ============================================
+    AssetManager:
+      type: object
+      properties:
+        id:
+          type: integer
+        externalCode:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        chiefInvestmentOfficer:
+          type: string
+        chiefExecutiveOfficer:
+          type: string
+        clientRelationshipManager:
+          type: string
+        inceptionYear:
+          type: integer
+          nullable: true
+        location:
+          type: string
+        bbbeeLevel:
+          type: integer
+          nullable: true
+        webSite:
+          type: string
+        lastChangedUser:
+          type: string
+
+    CreateAssetManagerRequest:
+      type: object
+      properties:
+        externalCode:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+      required: [externalCode, code, name, location]
+
+    Currency:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        numeric:
+          type: string
+
+    Country:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        alpha2Code:
+          type: string
+        alpha3Code:
+          type: string
+
+    Index:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        currencyId:
+          type: integer
+
+    Benchmark:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+
+    CreditRatingScale:
+      type: object
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        euCreditQualityStep:
+          type: integer
+        bbComp:
+          type: string
+        moodys:
+          type: string
+        sandP:
+          type: string
+        fitch:
+          type: string
+
+    # ============================================
+    # Calculations
+    # ============================================
+    CalculationStatus:
+      type: object
+      properties:
+        batchId:
+          type: integer
+        status:
+          type: string
+          enum: [NotStarted, InProgress, Completed, Failed]
+        calculations:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              status:
+                type: string
+                enum: [Pending, Running, Completed, Failed]
+              startTime:
+                type: string
+                format: date-time
+                nullable: true
+              endTime:
+                type: string
+                format: date-time
+                nullable: true
+              errorCount:
+                type: integer
+
+    CalculationError:
+      type: object
+      properties:
+        id:
+          type: integer
+        calculationName:
+          type: string
+        errorCategory:
+          type: string
+        errorMessage:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    # ============================================
+    # Report Comments
+    # ============================================
+    ReportComment:
+      type: object
+      properties:
+        id:
+          type: integer
+        reportBatchId:
+          type: integer
+        reportListId:
+          type: integer
+        comment:
+          type: string
+        lastChangedUser:
+          type: string
+        validFrom:
+          type: string
+          format: date-time
+
+    CreateReportCommentRequest:
+      type: object
+      properties:
+        reportListId:
+          type: integer
+        comment:
+          type: string
+      required: [reportListId, comment]
+
+    # ============================================
+    # Audit
+    # ============================================
+    AuditTrailEntry:
+      type: object
+      properties:
+        entityType:
+          type: string
+        entityId:
+          type: integer
+        changeType:
+          type: string
+          enum: [Created, Updated, Deleted]
+        changedBy:
+          type: string
+        changedAt:
+          type: string
+          format: date-time
+        changes:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              oldValue:
+                type: string
+                nullable: true
+              newValue:
+                type: string
+                nullable: true
+
+    AuditTrailList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditTrailEntry'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
