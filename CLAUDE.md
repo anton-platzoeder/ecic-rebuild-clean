@@ -92,6 +92,28 @@ export const createUser = (data: CreateUserRequest) =>
 
 **Never assume** that a backend does not exist. Use this detection system:
 
+**Layer 0 - BRD Analysis (BEFORE workflow starts):**
+Before starting any TDD workflow (especially DESIGN phase), read the BRD/spec thoroughly and check for backend/database requirements. Look for these signals:
+
+- "database" mentions in assumptions/dependencies
+- Audit trails or data retention requirements (e.g., "7 years")
+- Master data management requirements
+- Multi-level approvals or workflow state management
+- User management / RBAC requirements
+- File imports/processing requirements
+- Historical comparison or real-time validation
+
+**If ANY of these exist, ASK the user before proceeding:**
+- "The BRD requires [data persistence/audit trails/etc]. Do you have an existing backend API, or should we define one?"
+- "No OpenAPI spec found. Should I generate one based on the BRD before proceeding with UI design?"
+
+**Correct workflow order for data-intensive applications:**
+1. Read BRD → Identify data/backend requirements
+2. Define database schema (or confirm existing)
+3. Define/locate OpenAPI spec
+4. THEN proceed to UI design (wireframes reference API contracts)
+5. THEN scope epics and stories
+
 **Layer 1 - Early Detection (at workflow start):**
 Before implementing any API-related features, check `documentation/` for:
 - OpenAPI specs (`*.yaml`, `*.json` with openapi/swagger content)
