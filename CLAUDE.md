@@ -107,6 +107,16 @@ Before starting any TDD workflow (especially DESIGN phase), read the BRD/spec th
 - "The BRD requires [data persistence/audit trails/etc]. Do you have an existing backend API, or should we define one?"
 - "No OpenAPI spec found. Should I generate one based on the BRD before proceeding with UI design?"
 
+**Also check BRD "Dependencies" section and ASK about each:**
+- Database: "Is there an existing database? What type (SQL Server, PostgreSQL, etc.)?"
+- Auth: "Is there an enterprise directory (AD/LDAP) for authentication, or standalone?"
+- File formats: "Do you have file format specifications from data providers?"
+- External systems: "Is [Power BI/etc] already configured? How will we integrate?"
+- Infrastructure: "Are network/firewall rules in place, or is this greenfield?"
+- Business process: "Are workflows finalized, or still being defined?"
+
+**NEVER proceed without clarifying external dependencies.** These affect architecture decisions.
+
 **Correct workflow order for data-intensive applications:**
 1. Read BRD → Identify data/backend requirements
 2. Define database schema (or confirm existing)
