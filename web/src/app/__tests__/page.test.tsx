@@ -351,8 +351,8 @@ describe('Dashboard Page', () => {
         expect(
           screen.getByRole('heading', { name: /active batches/i }),
         ).toBeInTheDocument();
-        expect(screen.getByText(/January 2026/i)).toBeInTheDocument();
-        expect(screen.getByText(/December 2025/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/January 2026/i)[0]).toBeInTheDocument();
+        expect(screen.getAllByText(/December 2025/i)[0]).toBeInTheDocument();
       });
     });
 
@@ -451,10 +451,10 @@ describe('Dashboard Page', () => {
         expect(
           screen.getByRole('heading', { name: /data quality alerts/i }),
         ).toBeInTheDocument();
-        expect(screen.getByText(/8/)).toBeInTheDocument(); // missingRatings
-        expect(screen.getByText(/5/)).toBeInTheDocument(); // missingDurations
-        expect(screen.getByText(/3/)).toBeInTheDocument(); // missingBetas
-        expect(screen.getByText(/2/)).toBeInTheDocument(); // missingIndexPrices
+        expect(screen.getByText('8')).toBeInTheDocument(); // missingRatings
+        expect(screen.getByText('5')).toBeInTheDocument(); // missingDurations
+        expect(screen.getByText('3')).toBeInTheDocument(); // missingBetas
+        expect(screen.getByText('2')).toBeInTheDocument(); // missingIndexPrices
       });
     });
 
@@ -686,8 +686,8 @@ describe('Dashboard Page', () => {
         ).toBeInTheDocument();
       });
 
-      const fixLink = screen.getByRole('link', { name: /fix/i });
-      await user.click(fixLink);
+      const fixLinks = screen.getAllByRole('link', { name: /fix/i });
+      await user.click(fixLinks[0]);
 
       expect(mockRouter.push).toHaveBeenCalledWith(
         '/master-data/durations?missing=true',
@@ -716,13 +716,13 @@ describe('Dashboard Page', () => {
       render(<HomePage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/January 2026/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/January 2026/i)[0]).toBeInTheDocument();
       });
 
-      const viewDetailsLink = screen.getByRole('link', {
+      const viewDetailsLinks = screen.getAllByRole('link', {
         name: /view details/i,
       });
-      await user.click(viewDetailsLink);
+      await user.click(viewDetailsLinks[0]);
 
       expect(mockRouter.push).toHaveBeenCalledWith('/batches/1');
     });
