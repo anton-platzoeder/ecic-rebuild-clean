@@ -44,9 +44,10 @@
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | POST | `/v1/auth/login` | Authenticate user with AD/LDAP credentials |
-| POST | `/v1/auth/logout` | Terminate user session |
-| GET | `/v1/auth/session` | Retrieve current session information |
+| GET | `/v1/auth/me` | Retrieve current user/session information |
 | POST | `/v1/auth/refresh` | Refresh session token |
+
+> **Note (REALIGN):** `/v1/auth/logout` removed — logout uses client-side session clearing (cookie removal + redirect). `/v1/auth/session` replaced with existing `/v1/auth/me` endpoint per OpenAPI spec. Decision made 2026-02-06.
 
 ## Implementation Notes
 

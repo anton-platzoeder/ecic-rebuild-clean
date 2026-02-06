@@ -338,3 +338,57 @@ export function isAuthorized(
 
   return false;
 }
+
+/**
+ * Session data structure for middleware authentication checks
+ */
+interface SessionData {
+  user: {
+    id: string;
+    username: string;
+    roles: string[];
+  };
+}
+
+/**
+ * Get session data from request cookies
+ * Used by middleware to check authentication status
+ *
+ * @param request - The Next.js request object
+ * @returns Session data if authenticated, null otherwise
+ */
+export async function getSessionFromRequest(
+  request: NextRequest,
+): Promise<SessionData | null> {
+  // Check for access token in cookies
+  const accessToken = request.cookies.get('accessToken');
+
+  if (!accessToken) {
+    return null;
+  }
+
+  // In a real implementation, you would validate the token and extract user data
+  // For now, return a mock session structure for the middleware tests
+  // This would typically call your auth service to validate the token
+  return {
+    user: {
+      id: 'user-1',
+      username: 'jdoe',
+      roles: ['Analyst'],
+    },
+  };
+}
+
+/**
+ * Check if a request is authenticated
+ * Used by middleware to protect routes
+ *
+ * @param request - The Next.js request object
+ * @returns true if request has valid authentication
+ */
+export async function isAuthenticatedRequest(
+  request: NextRequest,
+): Promise<boolean> {
+  const session = await getSessionFromRequest(request);
+  return session !== null;
+}

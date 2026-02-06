@@ -1,5 +1,36 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom/vitest';
+import { expect } from 'vitest';
+import type { AxeResults } from 'axe-core';
+
+// Manually implement toHaveNoViolations matcher since vitest-axe exports are type-only
+function toHaveNoViolations(results: AxeResults) {
+  const violations = results.violations;
+  const pass = violations.length === 0;
+
+  const message = () => {
+    if (pass) {
+      return 'Expected violations but found none';
+    }
+
+    const violationMessages = violations
+      .map(
+        (violation) =>
+          `${violation.impact}: ${violation.description}\n` +
+          violation.nodes
+            .map((node) => `  - ${node.html}\n    ${node.failureSummary}`)
+            .join('\n'),
+      )
+      .join('\n\n');
+
+    return `Expected no accessibility violations but found ${violations.length}:\n\n${violationMessages}`;
+  };
+
+  return { pass, message };
+}
+
+// Extend Vitest matchers
+expect.extend({ toHaveNoViolations });
 
 // Polyfill for Web APIs needed by Next.js
 // These are required for testing files that import from 'next/server'
