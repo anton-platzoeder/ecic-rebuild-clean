@@ -9,6 +9,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Shield } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,16 +18,6 @@ import { Label } from '@/components/ui/label';
 import { login, getCurrentUser } from '@/lib/api/auth';
 import { resetSessionTimeout } from '@/lib/auth/session';
 
-/**
- * Login Page Component
- *
- * Features:
- * - Username and password form with validation
- * - Error handling for invalid credentials, locked accounts, and deactivated users
- * - Automatic redirect if user is already authenticated
- * - Loading state during authentication
- * - Accessible form with ARIA labels and error messages
- */
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
@@ -35,12 +26,10 @@ export default function LoginPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if user is already authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         await getCurrentUser();
-        // If getCurrentUser succeeds, user is authenticated
         router.replace('/');
       } catch {
         // User is not authenticated, stay on login page
@@ -55,7 +44,6 @@ export default function LoginPage() {
     setError(null);
     setValidationError(null);
 
-    // Client-side validation
     if (!username.trim()) {
       setValidationError('Username is required');
       return;
@@ -71,17 +59,12 @@ export default function LoginPage() {
     try {
       const response = await login({ username, password });
 
-      // Store tokens in cookies (this would typically be handled by the API client)
       document.cookie = `accessToken=${response.accessToken}; path=/; max-age=${response.expiresIn}`;
       document.cookie = `refreshToken=${response.refreshToken}; path=/; max-age=${response.expiresIn * 2}`;
 
-      // Initialize session timeout
       resetSessionTimeout();
-
-      // Redirect to dashboard
       router.push('/');
     } catch (err) {
-      // Handle authentication errors
       if (err && typeof err === 'object' && 'message' in err) {
         setError(err.message as string);
       } else {
@@ -92,65 +75,74 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold">
-            Sign In
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username Field */}
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isLoading}
-                className="mt-1"
-              />
-            </div>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <Shield className="mx-auto h-12 w-12 text-primary" />
+          <h1 className="mt-4 text-2xl font-bold tracking-tight">
+            InvestInsight
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Investment Compliance & Insights Platform
+          </p>
+        </div>
 
-            {/* Password Field */}
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                className="mt-1"
-              />
-            </div>
-
-            {/* Validation Error */}
-            {validationError && (
-              <div className="text-sm text-red-600">{validationError}</div>
-            )}
-
-            {/* API Error */}
-            {error && (
-              <div
-                role="alert"
-                className="rounded-md bg-red-50 p-3 text-sm text-red-800"
-              >
-                {error}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl font-bold">
+              Sign In
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
+                  className="mt-1"
+                />
               </div>
-            )}
 
-            {/* Submit Button */}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="mt-1"
+                />
+              </div>
+
+              {validationError && (
+                <div className="text-sm text-destructive">
+                  {validationError}
+                </div>
+              )}
+
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
