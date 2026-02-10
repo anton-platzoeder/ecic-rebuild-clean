@@ -604,6 +604,39 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   /approval-authorities/{id}:
+    put:
+      tags: [ApprovalAuthority]
+      summary: Update approval authority
+      description: Update approval authority record (e.g., mark out-of-office, change effective dates)
+      operationId: updateApprovalAuthority
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApprovalAuthorityRequest'
+      responses:
+        '200':
+          description: Authority updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalAuthorityEntry'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
     delete:
       tags: [ApprovalAuthority]
       summary: Remove approval authority
@@ -615,10 +648,120 @@ paths:
       responses:
         '204':
           description: Authority removed
+        '400':
+          description: Cannot remove - user has pending approvals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /approval-authorities/{id}/backup:
+    post:
+      tags: [ApprovalAuthority]
+      summary: Configure backup approver
+      description: Set one or more backup approvers for a primary approver
+      operationId: configureBackupApprover
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigureBackupRequest'
+      responses:
+        '200':
+          description: Backup approver(s) configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalAuthorityEntry'
+        '400':
+          description: Validation error (e.g., backup must have same or higher level)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /approval-authorities/active:
+    get:
+      tags: [ApprovalAuthority]
+      summary: Get currently active approvers
+      description: Get all currently active approvers per level (excludes OOO and inactive)
+      operationId: getActiveApprovers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active approvers grouped by level
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  level1:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApproverSummary'
+                  level2:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApproverSummary'
+                  level3:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApproverSummary'
+
+  /approval-authorities/rules:
+    get:
+      tags: [ApprovalAuthority]
+      summary: Get approval rules configuration
+      description: Get the current approval rule for each level
+      operationId: getApprovalRules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Approval rules by level
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApprovalRulesConfig'
+
+    put:
+      tags: [ApprovalAuthority]
+      summary: Update approval rules configuration
+      description: Update the approval rule for a specific level
+      operationId: updateApprovalRules
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRulesConfig'
+      responses:
+        '200':
+          description: Rules updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRulesConfig'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /approval-authorities/by-level/{level}:
     get:
@@ -2372,6 +2515,9 @@ components:
         email:
           type: string
           nullable: true
+        roleName:
+          type: string
+          description: "User's role name (e.g., 'Approver Level 1')"
         approvalLevel:
           type: integer
           enum: [1, 2, 3]
@@ -2379,6 +2525,19 @@ components:
           type: boolean
         isActive:
           type: boolean
+        isOutOfOffice:
+          type: boolean
+          default: false
+        outOfOfficeUntil:
+          type: string
+          format: date
+          nullable: true
+          description: Return date from out-of-office
+        backupApprovers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApproverSummary'
+          description: Backup approvers designated for this primary approver
         effectiveFrom:
           type: string
           format: date
@@ -2391,6 +2550,10 @@ components:
         assignedAt:
           type: string
           format: date-time
+        pendingApprovalCount:
+          type: integer
+          default: 0
+          description: Number of batches awaiting this approver's approval
 
     CreateApprovalAuthorityRequest:
       type: object
@@ -2409,7 +2572,53 @@ components:
         effectiveTo:
           type: string
           format: date
+          nullable: true
       required: [userId, approvalLevel, effectiveFrom]
+
+    UpdateApprovalAuthorityRequest:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        isOutOfOffice:
+          type: boolean
+        outOfOfficeUntil:
+          type: string
+          format: date
+          nullable: true
+        effectiveTo:
+          type: string
+          format: date
+          nullable: true
+
+    ConfigureBackupRequest:
+      type: object
+      properties:
+        backupUserIds:
+          type: array
+          items:
+            type: integer
+          description: User IDs of backup approvers to assign
+      required: [backupUserIds]
+
+    ApprovalRulesConfig:
+      type: object
+      properties:
+        level:
+          type: integer
+          enum: [1, 2, 3]
+        rule:
+          type: string
+          enum: [any_one, specific_assignee, consensus]
+          description: |
+            any_one - Any one approver can approve
+            specific_assignee - Specific approver assigned per batch
+            consensus - Requires consensus from 2+ approvers
+        consensusRequired:
+          type: integer
+          nullable: true
+          description: Number of approvals required when rule=consensus (default 2)
+      required: [level, rule]
 
     ApproverSummary:
       type: object
@@ -2422,6 +2631,16 @@ components:
           type: string
         email:
           type: string
+          nullable: true
+        roleName:
+          type: string
+          nullable: true
+        isOutOfOffice:
+          type: boolean
+          default: false
+        outOfOfficeUntil:
+          type: string
+          format: date
           nullable: true
 
     # ============================================
