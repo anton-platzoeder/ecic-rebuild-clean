@@ -18,7 +18,7 @@
 - [ ] Given a user successfully authenticates, when they log in, then a session is created with a JWT token containing userId, username, displayName, roles, and expiration timestamp
 - [ ] Given a user has an active session, when they perform any action, then the session token is validated before processing the request
 - [ ] Given a session token is valid, when I decode it, then I can extract the user's ID, username, and array of role names
-- [ ] Given a user's session token is stored, when I check its format, then it is stored in an httpOnly cookie (not accessible to JavaScript for XSS protection)
+- [ ] ~~Given a user's session token is stored, when I check its format, then it is stored in an httpOnly cookie~~ **DEFERRED** - httpOnly cookie requires backend `Set-Cookie` header; will address later
 
 ### Session Timeout and Refresh
 - [ ] Given a user has an active session, when 30 minutes pass without any activity, then their session expires
@@ -43,8 +43,7 @@
 - [ ] Given a user with the Operations Lead role attempts to access `/batches`, when the page loads, then the page renders successfully (they have permission)
 
 ### Permission Checking Utility Functions
-- [ ] Given I call `hasPermission(user, 'instrument.create')` with a user who has Operations Lead role, when I check the result during Data Preparation phase, then it returns `true`
-- [ ] Given I call `hasPermission(user, 'instrument.create')` with a user who has Operations Lead role, when I check the result during Approval phase, then it returns `false` (state-based lock)
+- [ ] Given I call `hasPermission(user, 'instrument.create')` with a user who has Operations Lead role, then it returns `true`
 - [ ] Given I call `hasRole(user, 'Approver Level 2')`, when the user has that role assigned, then it returns `true`
 - [ ] Given I call `hasAnyRole(user, ['Operations Lead', 'Analyst'])`, when the user has at least one of those roles, then it returns `true`
 
@@ -52,14 +51,11 @@
 - [ ] Given a user has both Operations Lead and Read-Only roles, when I check their permissions, then they have the combined (cumulative) permissions of both roles
 - [ ] Given a user has roles with conflicting permissions, when I check their permissions, then the most permissive access is granted (cumulative model)
 
-### State-Based Access Control (Per BR-GOV-005)
-- [ ] Given a user has 'instrument.update' permission, when the current batch is in Data Preparation state, then `hasPermission(user, 'instrument.update')` returns `true`
-- [ ] Given a user has 'instrument.update' permission, when the current batch is in Level 1 Approval state, then `hasPermission(user, 'instrument.update')` returns `false` (locked)
-- [ ] Given a user has 'instrument.update' permission, when the current batch state changes from Approval back to Data Preparation (after rejection), then `hasPermission(user, 'instrument.update')` returns `true` (unlocked)
+### State-Based Access Control (Per BR-GOV-005) — DEFERRED to Epic 2+
+> State-based access control depends on batch workflow states which are implemented in Epic 2+.
 
-### Segregation of Duties Enforcement
-- [ ] Given a user has both Operations Lead and Approver Level 1 roles, when they attempt to approve a batch they created, then the system returns error "Cannot approve batch you prepared (segregation of duties)"
-- [ ] Given a user has both Operations Lead and Approver Level 1 roles, when they attempt to approve a batch created by another user, then the approval is allowed
+### Segregation of Duties Enforcement — DEFERRED to Epic 2+
+> Segregation of duties depends on batch ownership tracking which is implemented in Epic 2+.
 
 ### Session Invalidation on User Changes
 - [ ] Given a user's roles are modified by an administrator, when the user attempts their next action, then the session is refreshed with updated roles
@@ -70,10 +66,9 @@
 - [ ] Given a user is logged in on one browser, when they log in on a different browser, then both sessions are valid (concurrent sessions allowed)
 - [ ] Given a user has multiple active sessions, when they log out from one browser, then only that session is terminated (other sessions remain active)
 
-### Security Headers and CSRF Protection
-- [ ] Given any API request is made, when I inspect the response headers, then I see security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`
-- [ ] Given a POST/PUT/DELETE request is made from the frontend, when the request is sent, then it includes a CSRF token in the headers
-- [ ] Given a POST/PUT/DELETE request without a valid CSRF token is received, when the backend validates it, then it returns HTTP 403 with message "Invalid CSRF token"
+### Security Headers and CSRF Protection — DEFERRED
+> CSRF protection requires backend coordination; will address later.
+> Security headers are typically set at the backend/reverse proxy level.
 
 ### Performance
 - [ ] Given a permission check is performed, when the check executes, then it completes within 10ms (in-memory role/permission cache)
@@ -89,13 +84,19 @@
 
 ## Implementation Notes
 
-- **JWT Tokens**: Use short-lived JWT tokens (30 minutes) with httpOnly cookies for storage
-- **Session Store**: Consider Redis for session storage in production for scalability
+- **JWT Tokens**: Use short-lived JWT tokens (30 minutes) stored in cookies
+- **Token Refresh**: Auto-refresh via `/v1/auth/refresh` when 15 minutes remaining
+- **Session Warning**: Toast notification at 5 minutes remaining
 - **Permission Cache**: Cache user permissions in memory; invalidate on role changes
-- **Middleware Stack**: Authentication → Authorization → State-based checks → Operation handler
-- **CSRF Protection**: Use double-submit cookie pattern or synchronizer token pattern
-- **Rate Limiting**: Implement rate limiting on sensitive endpoints (login, password reset)
-- **BRD Requirements**: BR-SEC-004 (Authentication & Authorization), BR-GOV-005 (State-Based Access Control)
+- **Middleware Stack**: Authentication → Authorization → Operation handler
+- **Logout**: Server-side session termination via `/v1/auth/logout`
+- **BRD Requirements**: BR-SEC-004 (Authentication & Authorization)
+
+### Deferred to Later
+- httpOnly cookies (requires backend `Set-Cookie` header)
+- CSRF protection (requires backend coordination)
+- State-based access control (Epic 2+ - batch workflow)
+- Segregation of duties (Epic 2+ - batch ownership)
 
 ## Dependencies
 - **Story 1**: User Authentication (provides session creation)

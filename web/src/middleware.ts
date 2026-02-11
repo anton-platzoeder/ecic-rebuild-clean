@@ -40,9 +40,17 @@ function isStaticAsset(pathname: string): boolean {
 
 /**
  * Check if a path is a protected route
+ * Uses prefix matching for all routes except root ('/') which requires exact match
  */
 function isProtectedRoute(pathname: string): boolean {
-  return PROTECTED_ROUTES.includes(pathname);
+  return PROTECTED_ROUTES.some((route) => {
+    // Root path requires exact match to avoid matching everything
+    if (route === '/') {
+      return pathname === '/';
+    }
+    // Other routes use prefix matching (e.g., /admin matches /admin/users)
+    return pathname === route || pathname.startsWith(route + '/');
+  });
 }
 
 /**

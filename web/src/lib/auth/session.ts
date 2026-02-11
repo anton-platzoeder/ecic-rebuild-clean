@@ -117,35 +117,24 @@ export interface SessionState {
 export function useSession(): SessionState {
   const router = useRouter();
 
-  // Initialize with false to allow tests to set localStorage after mount
-  // The useEffect will update this immediately on mount
-  const [isExpired, setIsExpired] = useState(false);
+  // Initialize state with current expiry status to support fake timers in tests
+  // State initializer runs synchronously on first render, avoiding timing issues
+  const [isExpired, setIsExpired] = useState(() => isSessionExpired());
 
   useEffect(() => {
     // Store router reference for use by logout function
-    // This is a side effect and belongs in useEffect
     routerRef = router;
 
-    // Check expiry on mount
-    const checkExpiry = () => {
-      const expired = isSessionExpired();
-      setIsExpired(expired);
-    };
-
-    // Perform initial check
-    checkExpiry();
-
-    // Set up activity listeners
+    // Set up activity listeners that reset timeout and update expiry state
     const handleActivity = () => {
       resetSessionTimeout();
-      checkExpiry();
+      setIsExpired(false);
     };
 
     document.addEventListener('mousemove', handleActivity);
     document.addEventListener('keydown', handleActivity);
     document.addEventListener('click', handleActivity);
 
-    // Clean up listeners on unmount
     return () => {
       document.removeEventListener('mousemove', handleActivity);
       document.removeEventListener('keydown', handleActivity);
