@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { ToastContainer } from '@/components/toast/ToastContainer';
 import { AuthenticatedNav } from '@/components/layout/AuthenticatedNav';
+import { BatchProvider } from '@/contexts/BatchContext';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -25,10 +26,12 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
         <ToastProvider>
-          <div className="min-h-screen flex flex-col">
-            <AuthenticatedNav />
-            <main className="flex-1">{children}</main>
-          </div>
+          <BatchProvider>
+            <div className="min-h-screen flex flex-col">
+              <AuthenticatedNav />
+              <main className="flex-1">{children}</main>
+            </div>
+          </BatchProvider>
           <ToastContainer />
         </ToastProvider>
       </body>

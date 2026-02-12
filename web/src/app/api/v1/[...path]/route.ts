@@ -359,6 +359,78 @@ const MOCK_APPROVAL_RULES = [
   { level: 3, rule: 'specific', consensusRequired: null },
 ];
 
+const MOCK_REPORT_BATCHES = [
+  {
+    id: 1,
+    reportBatchType: 'Monthly',
+    reportDate: '2026-01-31',
+    workflowInstanceId: 'wf-001',
+    status: 'DataPreparation',
+    createdAt: '2026-01-15T10:00:00Z',
+    createdBy: 'Emily Johnson',
+    lastRejection: null,
+    fileSummary: { received: 3, total: 5 },
+    validationSummary: { errors: 0, warnings: 2 },
+    calculationStatus: 'Not Started',
+  },
+  {
+    id: 2,
+    reportBatchType: 'Monthly',
+    reportDate: '2025-12-31',
+    workflowInstanceId: 'wf-002',
+    status: 'Approved',
+    createdAt: '2025-12-01T09:00:00Z',
+    createdBy: 'Emily Johnson',
+    lastRejection: null,
+    fileSummary: { received: 5, total: 5 },
+    validationSummary: { errors: 0, warnings: 0 },
+    calculationStatus: 'Complete',
+  },
+  {
+    id: 3,
+    reportBatchType: 'Monthly',
+    reportDate: '2025-11-30',
+    workflowInstanceId: 'wf-003',
+    status: 'Approved',
+    createdAt: '2025-11-01T09:00:00Z',
+    createdBy: 'Emily Johnson',
+    lastRejection: null,
+    fileSummary: { received: 5, total: 5 },
+    validationSummary: { errors: 0, warnings: 0 },
+    calculationStatus: 'Complete',
+  },
+  {
+    id: 4,
+    reportBatchType: 'Monthly',
+    reportDate: '2025-10-31',
+    workflowInstanceId: 'wf-004',
+    status: 'Level3Pending',
+    createdAt: '2025-10-01T09:00:00Z',
+    createdBy: 'Emily Johnson',
+    lastRejection: null,
+    fileSummary: { received: 5, total: 5 },
+    validationSummary: { errors: 0, warnings: 1 },
+    calculationStatus: 'Complete',
+  },
+  {
+    id: 5,
+    reportBatchType: 'Monthly',
+    reportDate: '2025-09-30',
+    workflowInstanceId: 'wf-005',
+    status: 'DataPreparation',
+    createdAt: '2025-09-01T09:00:00Z',
+    createdBy: 'Emily Johnson',
+    lastRejection: {
+      date: '2025-09-20T14:30:00Z',
+      level: 'Level 2',
+      reason: 'Missing credit ratings for 3 instruments',
+    },
+    fileSummary: { received: 4, total: 5 },
+    validationSummary: { errors: 2, warnings: 5 },
+    calculationStatus: 'Not Started',
+  },
+];
+
 function getUserFromToken(request: NextRequest): MockUser | null {
   const auth = request.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return null;
@@ -559,33 +631,31 @@ export async function GET(request: NextRequest) {
     ]);
   }
 
+  // GET /report-batches/:id
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 2 &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+    return json(batch);
+  }
+
   // GET /report-batches
-  if (seg[0] === 'report-batches') {
+  if (seg[0] === 'report-batches' && seg.length === 1) {
+    const url = new URL(request.url);
+    const pageSize = Number(url.searchParams.get('pageSize')) || 25;
+    const items = MOCK_REPORT_BATCHES.slice(0, pageSize);
     return json({
-      items: [
-        {
-          id: 1,
-          reportBatchType: 'Monthly',
-          reportDate: '2026-01-31',
-          workflowInstanceId: 'wf-001',
-          status: 'DataPreparation',
-        },
-        {
-          id: 2,
-          reportBatchType: 'Monthly',
-          reportDate: '2025-12-31',
-          workflowInstanceId: 'wf-002',
-          status: 'PendingLevel1Approval',
-        },
-        {
-          id: 3,
-          reportBatchType: 'Weekly',
-          reportDate: '2026-02-07',
-          workflowInstanceId: 'wf-003',
-          status: 'Complete',
-        },
-      ],
-      meta: { page: 1, pageSize: 25, totalItems: 3, totalPages: 1 },
+      items,
+      meta: {
+        page: 1,
+        pageSize,
+        totalItems: MOCK_REPORT_BATCHES.length,
+        totalPages: 1,
+      },
     });
   }
 

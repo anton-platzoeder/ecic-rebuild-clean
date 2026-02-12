@@ -84,6 +84,13 @@ export async function listReportBatches(
 }
 
 /**
+ * Get a single report batch by ID.
+ */
+export async function getReportBatch(id: number): Promise<ReportBatch> {
+  return get<ReportBatch>(`/report-batches/${id}`);
+}
+
+/**
  * Create a new report batch.
  * Requires 'batch.create' permission.
  */

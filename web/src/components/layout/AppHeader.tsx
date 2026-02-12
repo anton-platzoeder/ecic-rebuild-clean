@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { logout } from '@/lib/auth/session';
 import { cn } from '@/lib/utils';
+import { BatchSwitcher } from '@/components/batch/BatchSwitcher';
 
 interface NavLink {
   href: string;
@@ -104,6 +105,8 @@ export function AppHeader({
         </div>
 
         <div className="flex items-center gap-3">
+          <BatchSwitcher />
+          <Separator orientation="vertical" className="h-6" />
           <Badge variant="secondary" className="hidden sm:inline-flex">
             {roles[0]}
           </Badge>

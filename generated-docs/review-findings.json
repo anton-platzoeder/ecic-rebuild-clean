@@ -1,142 +1,45 @@
 {
-  "epic": 1,
-  "story": 8,
-  "reviewDate": "2026-02-11",
-  "reviewedFiles": [
-    "web/src/app/admin/users/login-activity/page.tsx",
-    "web/src/app/admin/users/login-activity/__tests__/page.test.tsx",
-    "web/src/lib/api/audit.ts"
+  "epic": 2,
+  "story": 2,
+  "storyTitle": "Batch Context Switching",
+  "reviewDate": "2026-02-12T13:30:00.000Z",
+  "reviewer": "code-reviewer-agent",
+  "filesReviewed": [
+    "web/src/lib/utils/storage.ts",
+    "web/src/lib/utils/date-formatting.ts",
+    "web/src/contexts/BatchContext.tsx",
+    "web/src/components/batch/BatchSwitcher.tsx",
+    "web/src/lib/api/batches.ts",
+    "web/src/components/layout/AppHeader.tsx"
   ],
-  "criticalIssues": [],
-  "highPriorityIssues": [
+  "criticalIssues": [
     {
-      "severity": "high",
-      "category": "code_quality",
-      "file": "web/src/app/admin/users/login-activity/page.tsx",
-      "line": 100,
-      "issue": "Unused variable 'err' in catch block",
-      "description": "Lint warning: unused variable. While not critical, should be fixed for consistency.",
-      "suggestedFix": "Replace 'err' with '_' to indicate intentionally unused: catch (_) { ... }"
-    },
-    {
-      "severity": "high",
-      "category": "ui_ux",
-      "file": "web/src/app/admin/users/login-activity/page.tsx",
-      "lines": [269, 271],
-      "issue": "Dynamic Tailwind class names will not be compiled",
-      "description": "Lines 269 and 271 use template literals to construct Tailwind classes (border-${severity}-500, text-${severity}-700). Tailwind requires full class names to be present at build time for tree-shaking. These classes will not work.",
-      "suggestedFix": "Use a mapping object: const severityClasses = { critical: 'border-red-500 text-red-700', warning: 'border-yellow-500 text-yellow-700', info: 'border-blue-500 text-blue-700' }; then className={severityClasses[alert.severity]}"
-    }
-  ],
-  "suggestions": [
-    {
-      "category": "accessibility",
-      "file": "web/src/app/admin/users/login-activity/page.tsx",
-      "line": 242,
-      "suggestion": "Loading spinner should have accessible name",
-      "description": "The loading spinner has role='progressbar' but no aria-label. Consider adding aria-label='Loading login activity'",
-      "priority": "medium"
-    },
-    {
-      "category": "performance",
-      "file": "web/src/app/admin/users/login-activity/page.tsx",
-      "lines": [57, 76],
-      "suggestion": "Consider memoizing filter functions",
-      "description": "loadData and loadUsers callbacks are defined with useCallback but have statusFilter/searchQuery as dependencies. This is correct, but verify re-render behavior under filter changes.",
-      "priority": "low"
+      "severity": "CRITICAL",
+      "category": "TypeScript Type Error",
+      "file": "web/src/contexts/BatchContext.tsx",
+      "line": 117,
+      "description": "Property name mismatch in ToastOptions interface",
+      "fix": "Change description to message to match ToastOptions interface"
     }
   ],
   "automatedChecks": {
-    "typeScript": {
-      "passed": true,
-      "details": "npm run build completed successfully with no TypeScript errors"
-    },
-    "eslint": {
+    "build": {
       "passed": false,
-      "details": "1 error in AuthenticatedNav.tsx (not Story 8), 1 warning in Story 8 (unused variable 'err')",
-      "story8Specific": "1 warning: unused variable 'err' at line 100"
+      "exitCode": 1,
+      "details": "TypeScript error at BatchContext.tsx:117"
+    },
+    "lint": {
+      "passed": true,
+      "exitCode": 0,
+      "warnings": 6,
+      "errors": 0
     },
     "tests": {
       "passed": true,
-      "total": 312,
-      "story8Tests": 30,
-      "details": "All 312 tests pass including 30 new tests for Story 8"
-    },
-    "testQuality": {
-      "passed": true,
-      "details": "npm run test:quality passed with no violations"
-    },
-    "errorSuppressions": {
-      "passed": true,
-      "count": 0,
-      "details": "No error suppressions found in Story 8 implementation"
-    },
-    "apiSpec": {
-      "passed": true,
-      "details": "All API endpoints match OpenAPI spec (GET /audit/logins, /audit/logins/alerts, /audit/logins/export)"
+      "exitCode": 0,
+      "totalTests": 413,
+      "passedTests": 413
     }
   },
-  "codeQualityChecks": {
-    "reactPatterns": {
-      "passed": true,
-      "details": "Proper use of hooks, client component directive, effect dependencies"
-    },
-    "nextJsPatterns": {
-      "passed": true,
-      "details": "Correct use of 'use client', no server-specific code in client component"
-    },
-    "shadcnUsage": {
-      "passed": true,
-      "details": "Uses Card, Table, Button, Input, Label, Badge, Select components correctly"
-    },
-    "apiClient": {
-      "passed": true,
-      "details": "Uses API client functions from @/lib/api/audit and @/lib/api/users, no raw fetch calls"
-    },
-    "pathAliases": {
-      "passed": true,
-      "details": "Consistent use of @/ path alias throughout"
-    },
-    "accessibility": {
-      "passed": true,
-      "details": "Semantic HTML, proper table structure, ARIA labels on inputs, role attributes on dynamic elements",
-      "notes": "Minor improvement possible: add aria-label to loading spinner"
-    },
-    "security": {
-      "passed": true,
-      "details": "RBAC check for Administrator role, no XSS vulnerabilities, no hardcoded secrets"
-    },
-    "errorHandling": {
-      "passed": true,
-      "details": "Proper try-catch blocks, user-facing error messages via console.error (could be improved with toast notifications)"
-    }
-  },
-  "testQualityChecks": {
-    "userObservableBehavior": {
-      "passed": true,
-      "details": "Tests verify what users see and can do, not implementation details"
-    },
-    "semanticQueries": {
-      "passed": true,
-      "details": "Uses getByRole, getByText, getByLabelText appropriately"
-    },
-    "noLibraryInternals": {
-      "passed": true,
-      "details": "Does not test internal DOM structure or third-party library internals"
-    },
-    "mockQuality": {
-      "passed": true,
-      "details": "Proper mock factories, correct use of mockResolvedValue/mockResolvedValueOnce"
-    }
-  },
-  "recommendation": "APPROVED_WITH_MINOR_FIXES",
-  "summary": "Story 8 implementation is high quality with one critical UI bug (dynamic Tailwind classes) that must be fixed before production. No error suppressions, good test coverage, proper API integration. The dynamic Tailwind class issue will cause styles to fail in production builds.",
-  "mustFixBeforeVerify": [
-    "Fix dynamic Tailwind class names in security alerts (lines 269, 271)"
-  ],
-  "niceToHave": [
-    "Replace unused 'err' variable with '_' at line 100",
-    "Add aria-label to loading spinner",
-    "Consider toast notifications for errors instead of console.error"
-  ]
+  "recommendation": "CHANGES_REQUIRED"
 }
