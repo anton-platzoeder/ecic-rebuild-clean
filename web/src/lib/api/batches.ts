@@ -101,6 +101,25 @@ export async function createReportBatch(
 }
 
 /**
+ * Get workflow status for a report batch.
+ */
+export interface BatchWorkflowStatus {
+  batchId: number;
+  currentStage: string;
+  isLocked: boolean;
+  canConfirm: boolean;
+  canApprove: boolean;
+  pendingApprovalLevel: number | null;
+  lastUpdated: string;
+}
+
+export async function getBatchWorkflowStatus(
+  id: number,
+): Promise<BatchWorkflowStatus> {
+  return get<BatchWorkflowStatus>(`/report-batches/${id}/status`);
+}
+
+/**
  * Legacy batch creation interface (Epic 1 compatibility).
  */
 export interface CreateBatchRequest {

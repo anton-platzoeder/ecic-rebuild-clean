@@ -8,8 +8,12 @@
  *
  * Tests for date formatting utilities
  */
-import { describe, it, expect } from 'vitest';
-import { formatReportDate, formatDateTime } from '@/lib/utils/date-formatting';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  formatReportDate,
+  formatDateTime,
+  formatRelativeTime,
+} from '@/lib/utils/date-formatting';
 
 describe('date-formatting utilities', () => {
   describe('formatReportDate', () => {
@@ -104,6 +108,63 @@ describe('date-formatting utilities', () => {
       expect(result).toContain('Jun');
       expect(result).toContain('20');
       expect(result).toContain('2026');
+    });
+  });
+
+  describe('formatRelativeTime (Epic 2 Story 3)', () => {
+    beforeEach(() => {
+      // Mock current date to 2026-01-15 12:00:00 UTC
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('returns "today" for timestamps within the same day', () => {
+      const todayMorning = '2026-01-15T08:00:00Z';
+      expect(formatRelativeTime(todayMorning)).toBe('today');
+    });
+
+    it('returns "1 day ago" for timestamps from yesterday', () => {
+      const yesterday = '2026-01-14T12:00:00Z';
+      expect(formatRelativeTime(yesterday)).toBe('1 day ago');
+    });
+
+    it('returns "2 days ago" for timestamps from 2 days ago', () => {
+      const twoDaysAgo = '2026-01-13T12:00:00Z';
+      expect(formatRelativeTime(twoDaysAgo)).toBe('2 days ago');
+    });
+
+    it('returns "3 days ago" for timestamps from 3 days ago', () => {
+      const threeDaysAgo = '2026-01-12T12:00:00Z';
+      expect(formatRelativeTime(threeDaysAgo)).toBe('3 days ago');
+    });
+
+    it('returns "7 days ago" for timestamps from a week ago', () => {
+      const weekAgo = '2026-01-08T12:00:00Z';
+      expect(formatRelativeTime(weekAgo)).toBe('7 days ago');
+    });
+
+    it('returns correct value for timestamps more than 30 days ago', () => {
+      const monthAgo = '2025-12-15T12:00:00Z';
+      expect(formatRelativeTime(monthAgo)).toBe('31 days ago');
+    });
+
+    it('handles timestamps at day boundary correctly', () => {
+      const justYesterday = '2026-01-14T23:59:59Z';
+      expect(formatRelativeTime(justYesterday)).toBe('1 day ago');
+    });
+
+    it('handles timestamps from same hour correctly', () => {
+      const sameHour = '2026-01-15T12:30:00Z';
+      expect(formatRelativeTime(sameHour)).toBe('today');
+    });
+
+    it('handles timestamps from minutes ago correctly', () => {
+      const minutesAgo = '2026-01-15T11:45:00Z';
+      expect(formatRelativeTime(minutesAgo)).toBe('today');
     });
   });
 });

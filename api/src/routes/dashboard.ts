@@ -47,4 +47,49 @@ export default async function dashboardRoutes(fastify: FastifyInstance) {
       };
     },
   );
+
+  // GET /report-batches/:id
+  fastify.get<{ Params: { id: string } }>(
+    '/report-batches/:id',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id, 10);
+      const batch = mockBatches.find(b => b.id === id);
+      if (!batch) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Batch not found' });
+      }
+      return batch;
+    },
+  );
+
+  // GET /report-batches/:id/status (workflow status)
+  fastify.get<{ Params: { id: string } }>(
+    '/report-batches/:id/status',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id, 10);
+      const batch = mockBatches.find(b => b.id === id);
+      if (!batch) {
+        return reply.status(404).send({ code: 'NOT_FOUND', message: 'Batch not found' });
+      }
+
+      const approvalLevelMap: Record<string, number | null> = {
+        DataPreparation: null,
+        Level1Pending: 1,
+        Level2Pending: 2,
+        Level3Pending: 3,
+        Approved: null,
+      };
+
+      return {
+        batchId: batch.id,
+        currentStage: batch.status,
+        isLocked: batch.status !== 'DataPreparation',
+        canConfirm: batch.status === 'DataPreparation',
+        canApprove: ['Level1Pending', 'Level2Pending', 'Level3Pending'].includes(batch.status),
+        pendingApprovalLevel: approvalLevelMap[batch.status] ?? null,
+        lastUpdated: batch.createdAt,
+      };
+    },
+  );
 }

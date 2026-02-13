@@ -104,4 +104,10 @@ export interface ReportBatch {
   reportDate: string;
   workflowInstanceId: string | null;
   status: 'DataPreparation' | 'Level1Pending' | 'Level2Pending' | 'Level3Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  createdBy: string;
+  lastRejection: { date: string; level: string; reason: string } | null;
+  fileSummary: { received: number; total: number };
+  validationSummary: { errors: number; warnings: number };
+  calculationStatus: string;
 }

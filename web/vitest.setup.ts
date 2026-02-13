@@ -50,6 +50,15 @@ if (typeof Element !== 'undefined') {
   }
 }
 
+// Polyfill for ResizeObserver (required by Radix UI Tooltip)
+if (typeof ResizeObserver === 'undefined') {
+  global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 // Polyfill for Web APIs needed by Next.js
 // These are required for testing files that import from 'next/server'
 if (typeof Request === 'undefined') {

@@ -19,6 +19,7 @@ import {
   PaginationMeta,
 } from '@/lib/api/batches';
 import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 type FilterOption = 'All' | 'Active' | 'Closed';
 type SortOption = 'Latest First' | 'Oldest First';
@@ -95,62 +96,64 @@ function BatchCard({ batch }: BatchCardProps) {
 
   return (
     <article>
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">
-                {formatReportDate(batch.reportDate)}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Created by {batch.createdBy}
-              </p>
+      <Link href={`/batches/${batch.id}/workflow`} className="block">
+        <Card className="transition-colors hover:border-primary/50 hover:shadow-md cursor-pointer">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {formatReportDate(batch.reportDate)}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Created by {batch.createdBy}
+                </p>
+              </div>
+              <Badge className={getStatusBadgeColor(batch.status)}>
+                {statusText}
+              </Badge>
             </div>
-            <Badge className={getStatusBadgeColor(batch.status)}>
-              {statusText}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {hasRejection && batch.lastRejection && (
-            <div
-              role="alert"
-              className="rounded-md bg-destructive/10 p-3 text-sm"
-            >
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-                <div>
-                  <p className="font-medium text-destructive">
-                    Rejected at {batch.lastRejection.level}
-                  </p>
-                  <p className="text-muted-foreground mt-1">
-                    {batch.lastRejection.reason}
-                  </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {hasRejection && batch.lastRejection && (
+              <div
+                role="alert"
+                className="rounded-md bg-destructive/10 p-3 text-sm"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                  <div>
+                    <p className="font-medium text-destructive">
+                      Rejected at {batch.lastRejection.level}
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                      {batch.lastRejection.reason}
+                    </p>
+                  </div>
                 </div>
               </div>
+            )}
+
+            <WorkflowProgress status={batch.status} />
+
+            <div className="flex items-center justify-between text-sm pt-2">
+              <span className="text-muted-foreground">
+                {batch.fileSummary.received} of {batch.fileSummary.total} files
+                received
+              </span>
+              {batch.validationSummary.warnings > 0 && (
+                <span className="text-yellow-600">
+                  {batch.validationSummary.warnings} warnings
+                </span>
+              )}
+              {batch.validationSummary.errors > 0 && (
+                <span className="text-destructive">
+                  {batch.validationSummary.errors} errors
+                </span>
+              )}
             </div>
-          )}
-
-          <WorkflowProgress status={batch.status} />
-
-          <div className="flex items-center justify-between text-sm pt-2">
-            <span className="text-muted-foreground">
-              {batch.fileSummary.received} of {batch.fileSummary.total} files
-              received
-            </span>
-            {batch.validationSummary.warnings > 0 && (
-              <span className="text-yellow-600">
-                {batch.validationSummary.warnings} warnings
-              </span>
-            )}
-            {batch.validationSummary.errors > 0 && (
-              <span className="text-destructive">
-                {batch.validationSummary.errors} errors
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Link>
     </article>
   );
 }

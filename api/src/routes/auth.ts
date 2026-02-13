@@ -4,6 +4,33 @@ import { findUserByUsername, getUserAuthInfo } from '../data/mock/users.js';
 import { authenticate } from '../middleware/authenticate.js';
 import type { LoginRequest, RefreshRequest } from '../types/index.js';
 
+/**
+ * Maps role names to the frontend pages they can access.
+ * Dashboard ("/") is always visible, so it's not listed here.
+ */
+const ROLE_ALLOWED_PAGES: Record<string, string[]> = {
+  OperationsLead: ['/batches', '/admin/audit-trail'],
+  Analyst: ['/batches'],
+  ApproverL1: ['/batches', '/approvals/level-1'],
+  ApproverL2: ['/batches', '/approvals/level-2'],
+  ApproverL3: ['/batches', '/approvals/level-3'],
+  Administrator: ['/batches', '/admin/users', '/admin/roles', '/admin/audit-trail'],
+  ReadOnly: ['/batches'],
+};
+
+function getAllowedPagesForRoles(roleNames: string[]): string[] {
+  const pages = new Set<string>();
+  for (const role of roleNames) {
+    const rolePages = ROLE_ALLOWED_PAGES[role];
+    if (rolePages) {
+      for (const page of rolePages) {
+        pages.add(page);
+      }
+    }
+  }
+  return Array.from(pages);
+}
+
 const ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '1h';
 const REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
 
@@ -59,6 +86,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
     const authInfo = getUserAuthInfo(user);
 
+    const allowedPages = getAllowedPagesForRoles(authInfo.roles);
+
     const accessToken = fastify.jwt.sign(
       {
         sub: authInfo.id,
@@ -67,6 +96,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         email: authInfo.email,
         roles: authInfo.roles,
         permissions: authInfo.permissions,
+        allowedPages,
       },
       { expiresIn: ACCESS_EXPIRY },
     );
@@ -84,7 +114,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       accessToken,
       refreshToken,
       expiresIn: parseExpiryToSeconds(ACCESS_EXPIRY),
-      user: authInfo,
+      user: { ...authInfo, allowedPages },
     };
   });
 
@@ -144,6 +174,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
       const authInfo = getUserAuthInfo(user);
 
+      const allowedPages = getAllowedPagesForRoles(authInfo.roles);
+
       const newAccessToken = fastify.jwt.sign(
         {
           sub: authInfo.id,
@@ -152,6 +184,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           email: authInfo.email,
           roles: authInfo.roles,
           permissions: authInfo.permissions,
+          allowedPages,
         },
         { expiresIn: ACCESS_EXPIRY },
       );
