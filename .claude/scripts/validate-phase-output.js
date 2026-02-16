@@ -9,16 +9,15 @@
  * Workflow Structure (3 Stages):
  *   Stage 1: DESIGN (once) → SCOPE (define epics only)
  *   Stage 2: Per-Epic: STORIES (define stories for current epic)
- *   Stage 3: Per-Story: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY
+ *   Stage 3: Per-Story: REALIGN → WRITE-TESTS → IMPLEMENT → QA
  *
  * Phases and their expected artifacts:
  *   DESIGN: wireframes in generated-docs/wireframes/
  *   SCOPE: _feature-overview.md with epics defined
  *   STORIES: story files in epic dir with acceptance criteria
- *   SPECIFY: test files for current story
+ *   WRITE-TESTS: test files for current story
  *   IMPLEMENT: source files that tests import
- *   REVIEW: review marker or findings file
- *   VERIFY: quality-gate-status.json
+ *   QA: review findings and quality-gate-status.json
  *
  * Exit codes:
  *   0 - All expected artifacts found
@@ -279,7 +278,7 @@ function validateStories(epicNum) {
 function validateSpecify(epicNum, storyNum) {
   const result = {
     status: 'valid',
-    phase: 'SPECIFY',
+    phase: 'WRITE-TESTS',
     epic: epicNum,
     story: storyNum,
     expected: storyNum
@@ -292,7 +291,7 @@ function validateSpecify(epicNum, storyNum) {
 
   if (!epicNum) {
     result.status = 'invalid';
-    result.missing.push('Epic number required for SPECIFY validation');
+    result.missing.push('Epic number required for WRITE-TESTS validation');
     return result;
   }
 
@@ -425,27 +424,30 @@ function validateImplement(epicNum, storyNum) {
   return result;
 }
 
-function validateReview(epicNum, storyNum) {
+function validateQA(epicNum, storyNum) {
   const result = {
     status: 'valid',
-    phase: 'REVIEW',
+    phase: 'QA',
     epic: epicNum,
     story: storyNum,
-    expected: ['review findings or marker'],
+    expected: ['review findings or marker', 'quality-gate-status.json'],
     found: [],
     missing: [],
     warnings: []
   };
 
+  let hasReviewArtifact = false;
+  let hasQualityGates = false;
+
   // Check for review findings JSON
-  const findingsPath = '.claude/context/review-findings.json';
+  const findingsPath = 'generated-docs/context/review-findings.json';
   if (fs.existsSync(findingsPath)) {
     try {
       const content = fs.readFileSync(findingsPath, 'utf-8');
       const findings = JSON.parse(content);
       if (findings.recommendation) {
         result.found.push('review-findings.json with recommendation');
-        return result;
+        hasReviewArtifact = true;
       }
     } catch {
       result.warnings.push('review-findings.json exists but is invalid');
@@ -453,103 +455,99 @@ function validateReview(epicNum, storyNum) {
   }
 
   // Check for story-specific review marker
-  if (epicNum && storyNum) {
+  if (!hasReviewArtifact && epicNum && storyNum) {
     const reviewMarker = `generated-docs/reviews/epic-${epicNum}-story-${storyNum}-review.md`;
     if (fs.existsSync(reviewMarker)) {
       result.found.push(`epic-${epicNum}-story-${storyNum}-review.md`);
-      return result;
+      hasReviewArtifact = true;
     }
   }
 
   // Check for epic-specific review marker
-  if (epicNum) {
+  if (!hasReviewArtifact && epicNum) {
     const reviewMarker = `generated-docs/reviews/epic-${epicNum}-review.md`;
     if (fs.existsSync(reviewMarker)) {
       result.found.push(`epic-${epicNum}-review.md`);
-      return result;
+      hasReviewArtifact = true;
     }
   }
 
-  // Check workflow state for review status
-  const statePath = '.claude/context/workflow-state.json';
-  if (fs.existsSync(statePath)) {
-    try {
-      const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-      if (state.epics && epicNum && state.epics[epicNum]) {
-        const epicState = state.epics[epicNum];
+  // Check workflow state for QA status
+  if (!hasReviewArtifact) {
+    const statePath = 'generated-docs/context/workflow-state.json';
+    if (fs.existsSync(statePath)) {
+      try {
+        const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+        if (state.epics && epicNum && state.epics[epicNum]) {
+          const epicState = state.epics[epicNum];
 
-        // Check story-level phase if storyNum provided
-        if (storyNum && epicState.stories && epicState.stories[storyNum]) {
-          const storyState = epicState.stories[storyNum];
-          if (['VERIFY', 'COMPLETE'].includes(storyState.phase)) {
-            result.found.push('workflow state indicates story review completed');
-            return result;
+          // Check story-level phase if storyNum provided
+          if (storyNum && epicState.stories && epicState.stories[storyNum]) {
+            const storyState = epicState.stories[storyNum];
+            if (storyState.phase === 'COMPLETE') {
+              result.found.push('workflow state indicates story QA completed');
+              hasReviewArtifact = true;
+            }
+          }
+
+          // Check epic-level phase
+          if (!hasReviewArtifact && epicState.phase === 'COMPLETE') {
+            result.found.push('workflow state indicates QA completed');
+            hasReviewArtifact = true;
           }
         }
+      } catch {
+        // Invalid state file
+      }
+    }
+  }
 
-        // Check epic-level phase
-        if (['VERIFY', 'COMPLETE'].includes(epicState.phase)) {
-          result.found.push('workflow state indicates review completed');
-          return result;
-        }
+  // Check quality gate status
+  const statusPath = 'generated-docs/context/quality-gate-status.json';
+  if (fs.existsSync(statusPath)) {
+    try {
+      const content = fs.readFileSync(statusPath, 'utf-8');
+      const status = JSON.parse(content);
+
+      if (!status.overallStatus) {
+        result.warnings.push('quality-gate-status.json missing overallStatus');
+      } else if (status.overallStatus === 'pass') {
+        result.found.push('quality-gate-status.json with passing status');
+        hasQualityGates = true;
+      } else {
+        result.warnings.push(`quality-gate-status.json shows ${status.overallStatus} status`);
+      }
+
+      // Check that gates are present
+      if (!status.gates) {
+        result.warnings.push('quality-gate-status.json missing gates object');
+      } else {
+        const gateCount = Object.keys(status.gates).length;
+        result.found.push(`${gateCount} quality gates recorded`);
+        hasQualityGates = true;
+      }
+
+      // If story-level validation, check that status includes story info
+      if (storyNum && status.story !== storyNum) {
+        result.warnings.push(`quality-gate-status.json may not be for story ${storyNum}`);
       }
     } catch {
-      // Invalid state file
+      result.warnings.push('quality-gate-status.json is invalid JSON');
     }
   }
 
-  result.status = 'invalid';
-  result.missing.push('No review completion indicator found');
-  return result;
-}
-
-function validateVerify(epicNum, storyNum) {
-  const result = {
-    status: 'valid',
-    phase: 'VERIFY',
-    epic: epicNum,
-    story: storyNum,
-    expected: ['quality-gate-status.json'],
-    found: [],
-    missing: [],
-    warnings: []
-  };
-
-  const statusPath = '.claude/context/quality-gate-status.json';
-
-  if (!fs.existsSync(statusPath)) {
+  // Determine overall status
+  if (!hasReviewArtifact && !hasQualityGates) {
     result.status = 'invalid';
-    result.missing.push('.claude/context/quality-gate-status.json');
-    return result;
-  }
-
-  try {
-    const content = fs.readFileSync(statusPath, 'utf-8');
-    const status = JSON.parse(content);
-
-    if (!status.overallStatus) {
-      result.warnings.push('quality-gate-status.json missing overallStatus');
-    } else if (status.overallStatus === 'pass') {
-      result.found.push('quality-gate-status.json with passing status');
-    } else {
-      result.warnings.push(`quality-gate-status.json shows ${status.overallStatus} status`);
+    result.missing.push('No QA completion indicators found (review artifacts or quality gate status)');
+  } else if (!hasReviewArtifact || !hasQualityGates) {
+    result.status = 'partial';
+    if (!hasReviewArtifact) {
+      result.missing.push('No review completion indicator found');
     }
-
-    // Check that gates are present
-    if (!status.gates) {
-      result.warnings.push('quality-gate-status.json missing gates object');
-    } else {
-      const gateCount = Object.keys(status.gates).length;
-      result.found.push(`${gateCount} quality gates recorded`);
+    if (!hasQualityGates) {
+      result.missing.push('quality-gate-status.json not found or invalid');
     }
-
-    // If story-level validation, check that status includes story info
-    if (storyNum && status.story !== storyNum) {
-      result.warnings.push(`quality-gate-status.json may not be for story ${storyNum}`);
-    }
-  } catch (e) {
-    result.status = 'invalid';
-    result.missing.push('quality-gate-status.json is invalid JSON');
   }
 
   return result;
@@ -569,13 +567,13 @@ Usage: node .claude/scripts/validate-phase-output.js --phase <PHASE> [--epic <N>
 Workflow Structure (3 Stages):
   Stage 1: DESIGN (once) → SCOPE (define epics only)
   Stage 2: Per-Epic: STORIES (define stories for current epic)
-  Stage 3: Per-Story: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY
+  Stage 3: Per-Story: REALIGN → WRITE-TESTS → IMPLEMENT → QA
 
-Phases: DESIGN, SCOPE, STORIES, SPECIFY, IMPLEMENT, REVIEW, VERIFY
+Phases: DESIGN, SCOPE, STORIES, WRITE-TESTS, IMPLEMENT, QA
 
 Options:
   --phase <PHASE>  Phase to validate (required)
-  --epic <N>       Epic number (required for STORIES, SPECIFY, IMPLEMENT, REVIEW, VERIFY)
+  --epic <N>       Epic number (required for STORIES, WRITE-TESTS, IMPLEMENT, QA)
   --story <M>      Story number (optional, for per-story validation)
 
 Exit codes:
@@ -615,10 +613,9 @@ Exit codes:
     'DESIGN': () => validateDesign(),
     'SCOPE': () => validateScope(),
     'STORIES': () => validateStories(epicNum),
-    'SPECIFY': () => validateSpecify(epicNum, storyNum),
+    'WRITE-TESTS': () => validateSpecify(epicNum, storyNum),
     'IMPLEMENT': () => validateImplement(epicNum, storyNum),
-    'REVIEW': () => validateReview(epicNum, storyNum),
-    'VERIFY': () => validateVerify(epicNum, storyNum)
+    'QA': () => validateQA(epicNum, storyNum)
   };
 
   if (!validators[phase]) {

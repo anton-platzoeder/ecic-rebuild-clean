@@ -2,13 +2,45 @@
 name: ui-ux-designer
 description: Generates simple text-based wireframes from feature specs for UI planning before story creation.
 model: sonnet
-tools: Read, Write, Glob, Grep, Bash
+tools: Read, Write, Glob, Grep, Bash, AskUserQuestion, TodoWrite
 color: purple
 ---
 
 # UI/UX Designer Agent
 
 Generates simple, text-based wireframes from feature specifications. Run **before** feature-planner when your feature involves user interfaces.
+
+## Agent Startup
+
+**First action when starting work** (before any other steps):
+
+```bash
+node .claude/scripts/transition-phase.js --mark-started
+```
+
+This marks the current phase as "in_progress" for accurate status reporting.
+
+### Initialize Progress Display
+
+After marking the phase as started, generate and display the workflow progress list:
+
+```bash
+node .claude/scripts/generate-todo-list.js
+```
+
+Parse the JSON output and call `TodoWrite` with the resulting array. Then add your agent sub-tasks after the item with `status: "in_progress"`. Prefix sub-task content with `"    >> "` to distinguish from workflow items.
+
+**Your sub-tasks:**
+1. `"    >> Reading feature specification"`
+2. `"    >> Identifying screens needed"`
+3. `"    >> Getting screen list approval"`
+4. `"    >> Creating wireframes"`
+5. `"    >> Getting wireframe approval"`
+6. `"    >> Committing wireframes"`
+
+Start all sub-tasks as `"pending"`. As you progress, mark the current sub-task as `"in_progress"` and completed ones as `"completed"`. Re-run `generate-todo-list.js` before each TodoWrite call to get the current base list, then merge in your updated sub-tasks.
+
+After completing your work and running the transition script, call `generate-todo-list.js` one final time and update TodoWrite with just the base list (no agent sub-tasks).
 
 ## Workflow
 
@@ -220,35 +252,20 @@ git push origin main
 ### 6.3: Update Workflow State
 
 ```bash
-node .claude/scripts/transition-phase.js --epic 1 --to PLAN --verify-output
+node .claude/scripts/transition-phase.js --epic 1 --to SCOPE --verify-output
 ```
 
 Verify output contains `"status": "ok"`. If `"status": "error"`, STOP and report to user.
 
 ---
 
-## Step 7: Handoff
+## Step 7: Completion
 
-Present completion summary:
+Return a concise summary:
 
-```markdown
-## Wireframes Complete
-
-All [X] screens saved to `generated-docs/wireframes/`.
-
-### Files Created
-- `_overview.md`
-- `screen-1-[slug].md`
-- [...]
-
-### Next Phase: PLAN
 ```
-
-**STOP:** Ask user: "Clear context before PLAN phase? (Recommended: yes)"
-- If yes → User runs `/clear` then `/continue`
-- If no → Proceed to feature-planner
-
-**Do NOT skip this checkpoint.**
+DESIGN complete. [X] wireframes saved to generated-docs/wireframes/. Ready for SCOPE.
+```
 
 ---
 

@@ -10,9 +10,9 @@ The TDD workflow has three stages:
 
 1. **One-time setup**: DESIGN (optional) → SCOPE (define all epics, no stories yet)
 2. **Per-epic**: STORIES (define stories for the current epic only)
-3. **Per-story iteration**: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY → commit → (next story)
+3. **Per-story iteration**: REALIGN → WRITE-TESTS → IMPLEMENT → QA → commit → (next story)
 
-After VERIFY passes for a story:
+After QA passes for a story:
 - If more stories in epic → REALIGN for next story
 - If no more stories but more epics → STORIES for next epic
 - If no more stories and no more epics → Feature complete!
@@ -20,8 +20,6 @@ After VERIFY passes for a story:
 ## Step 1: Validate Workflow State
 
 First, check if workflow state exists and is valid:
-
-
 
 ```bash
 node .claude/scripts/transition-phase.js --show
@@ -49,17 +47,28 @@ The repair output includes:
 - `assumed`: What was inferred (may be wrong)
 - `confidenceReason`: Explanation of confidence level
 
-### If state exists:
+### If state exists (high confidence):
 
-Display a brief summary:
+Display a brief summary and **proceed immediately** — no confirmation needed:
 ```
-Current State:
-- Epic: [N] - [name]
-- Story: [M] - [title] (if in per-story phases)
-- Phase: [phase]
+Resuming: Epic [N], Story [M], Phase: [phase]
 ```
 
-Ask the user to confirm this is correct before proceeding. If they say it's wrong, use `--repair` or ask them to describe the correct state.
+### If state exists (medium/low confidence or user reports incorrect):
+
+Ask the user to confirm. If wrong, use `--repair` or ask them to describe the correct state.
+
+## Step 1.5: Reconstruct Progress Display
+
+After validating workflow state, reconstruct the TodoWrite progress display:
+
+```bash
+node .claude/scripts/generate-todo-list.js
+```
+
+Parse the JSON output and call `TodoWrite` with the resulting array. This is essential because TodoWrite state is lost on `/clear` — the list must be rebuilt from `workflow-state.json` on every `/continue`.
+
+**After the agent completes and returns**, re-run this script and update TodoWrite to reflect the new state.
 
 ## Step 2: Detect Detailed State (if needed)
 
@@ -87,10 +96,9 @@ Based on `workflow-state.json`, determine the agent and context:
 | DESIGN | `ui-ux-designer` | Spec path |
 | STORIES | `feature-planner` | Epic number, spec path |
 | REALIGN | `feature-planner` | Epic number, story number, discovered-impacts.md path |
-| SPECIFY | `test-generator` | Epic number, story number, story file path |
+| WRITE-TESTS | `test-generator` | Epic number, story number, story file path |
 | IMPLEMENT | `developer` | Epic, story, test file path, failing tests (see below) |
-| REVIEW | `code-reviewer` | Epic number, story number, files changed |
-| VERIFY | `quality-gate-checker` | Epic number, story number |
+| QA | `code-reviewer` | Epic number, story number, files changed |
 | COMPLETE | — | Check next action from transition output |
 
 Always provide: current epic number/name, current story number/name (from state), relevant file paths.
@@ -117,7 +125,7 @@ The transition script determines what's next:
 > # For epic-level phases (SCOPE, STORIES):
 > node .claude/scripts/transition-phase.js --epic [N] --to [NEXT_PHASE]
 >
-> # For story-level phases (REALIGN, SPECIFY, IMPLEMENT, REVIEW, VERIFY):
+> # For story-level phases (REALIGN, WRITE-TESTS, IMPLEMENT, QA):
 > node .claude/scripts/transition-phase.js --epic [N] --story [M] --to [NEXT_PHASE]
 > ```
 > Do not proceed to the next phase without running this command."
@@ -148,12 +156,36 @@ Example error handling:
 "The workflow transition failed: [message]. Please check the current state with /status."
 ```
 
+## Context Management Policy
+
+Context clearing happens at **4 mandatory boundaries**. The user must run `/clear` then `/continue` at each:
+
+1. After wireframe approval (DESIGN complete) — orchestrator instructs
+2. After epic list approval (SCOPE complete) — orchestrator instructs
+3. After story QA complete — code-reviewer return message (display and stop)
+4. After epic completion review — code-reviewer return message (display and stop)
+
+**Boundaries #3-4:** The code-reviewer's return message contains the clearing instruction. Display it and **STOP** — do not launch the next agent.
+
+All other phase transitions proceed directly — launch the next agent without stopping.
+
+**Post-compaction safety net:** The `inject-phase-context.ps1` hook automatically restores workflow instructions after auto-compaction.
+
+## Scoped Call Pattern
+
+For longer phases, split agent work into focused calls:
+
+- **IMPLEMENT:** 2 developer calls — (A) implement code, (B) run quality gates
+- **QA:** 2 code-reviewer calls — (A) code review, (B) gates + verify + commit
+- **After code-reviewer Call B returns:** Display its return message and **STOP**. The message contains the `/clear` + `/continue` instruction. Do not launch the next agent.
+
 ## DO
 
 - Always validate state at the start of the session
-- Ask user to confirm state before proceeding
+- Auto-proceed on high confidence state (no confirmation needed)
 - Commit work before handing off to the next agent
 - Remind agents to use the transition script
+- Use scoped calls for IMPLEMENT and QA phases
 
 ## DON'T
 
@@ -161,6 +193,7 @@ Example error handling:
 - Skip state validation
 - Trust artifact detection over the state file
 - Proceed if the user says the state is wrong
+- Stop for context clearing at non-boundary phase transitions
 
 ## Related Commands
 

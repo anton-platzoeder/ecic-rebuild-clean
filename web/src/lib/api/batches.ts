@@ -181,3 +181,99 @@ export interface Batch {
 export async function createBatch(data: CreateBatchRequest): Promise<Batch> {
   return post<Batch>('/v1/batches', data);
 }
+
+/**
+ * Epic 2 Story 6: Workflow History & Audit Trail
+ */
+
+export interface BatchApproval {
+  id: number;
+  batchId: number;
+  level: number;
+  decision: 'Approved' | 'Rejected';
+  decidedBy: string;
+  decidedAt: string;
+  comments: string | null;
+  automatedActions: string[];
+}
+
+export interface BatchAuditEvent {
+  id: number;
+  eventType: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  automatedActions: string[];
+}
+
+export interface BatchAuditTrail {
+  items: BatchAuditEvent[];
+  meta: PaginationMeta;
+}
+
+/**
+ * Get approval history for a batch.
+ */
+export async function getBatchApprovals(
+  batchId: number,
+): Promise<BatchApproval[]> {
+  return get<BatchApproval[]>(`/report-batches/${batchId}/approvals`);
+}
+
+/**
+ * Get audit trail for a batch with pagination.
+ */
+export async function getBatchAuditTrail(
+  batchId: number,
+  page = 1,
+  pageSize = 20,
+): Promise<BatchAuditTrail> {
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+  });
+  return get<BatchAuditTrail>(
+    `/report-batches/${batchId}/audit?${queryParams.toString()}`,
+  );
+}
+
+/**
+ * Epic 2 Story 8: Batch Status Summary
+ */
+
+export interface BatchFile {
+  id: number;
+  fileName: string;
+  fileType: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  status: 'Valid' | 'Failed' | 'Processing';
+  recordCount: number;
+  errorCount: number;
+}
+
+export interface BatchCalculation {
+  id: number;
+  calculationType: string;
+  status: 'Pending' | 'InProgress' | 'Complete' | 'Failed';
+  startedAt: string | null;
+  completedAt: string | null;
+  portfoliosProcessed: number;
+  totalPortfolios: number;
+}
+
+/**
+ * Get file status for a batch.
+ */
+export async function getBatchFiles(batchId: number): Promise<BatchFile[]> {
+  return get<BatchFile[]>(`/report-batches/${batchId}/files`);
+}
+
+/**
+ * Get calculation status for a batch.
+ */
+export async function getBatchCalculations(
+  batchId: number,
+): Promise<BatchCalculation[]> {
+  return get<BatchCalculation[]>(`/report-batches/${batchId}/calculations`);
+}

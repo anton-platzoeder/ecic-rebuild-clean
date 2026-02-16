@@ -6,48 +6,52 @@
  * Usage:
  *   node .claude/scripts/transition-phase.js --epic <N> --to <PHASE> [--story <M>] [--validate] [--verify-output]
  *   node .claude/scripts/transition-phase.js --current --to <PHASE> [--story <M>] [--validate] [--verify-output]
+ *   node .claude/scripts/transition-phase.js --mark-started
  *   node .claude/scripts/transition-phase.js --show
  *   node .claude/scripts/transition-phase.js --repair
  *
- * Phases: SCOPE, DESIGN, STORIES, REALIGN, SPECIFY, IMPLEMENT, REVIEW, VERIFY, COMPLETE
+ * Phases: SCOPE, DESIGN, STORIES, REALIGN, WRITE-TESTS, IMPLEMENT, QA, COMPLETE
  *
  * Workflow Structure (3 Stages):
  *   Stage 1: DESIGN (once) → SCOPE (define epics only)
  *   Stage 2: Per-Epic: STORIES (define stories for current epic)
- *   Stage 3: Per-Story: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY
+ *   Stage 3: Per-Story: REALIGN → WRITE-TESTS → IMPLEMENT → QA
+ *
+ * Phase Status:
+ *   Transitions set phaseStatus to "ready". Agents call --mark-started to set "in_progress".
  *
  * Options:
  *   --validate       Validate prerequisites before transitioning
  *   --verify-output  After transition, verify the FROM phase created expected outputs
+ *   --mark-started   Mark current phase as in_progress (agent calls when starting work)
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const STATE_FILE = '.claude/context/workflow-state.json';
-const CONTEXT_DIR = '.claude/context';
+const STATE_FILE = 'generated-docs/context/workflow-state.json';
+const STATE_DIR = 'generated-docs/context';
 const VALIDATE_SCRIPT = '.claude/scripts/validate-phase-output.js';
 
 // Valid phases in order
-const PHASES = ['SCOPE', 'DESIGN', 'STORIES', 'REALIGN', 'SPECIFY', 'IMPLEMENT', 'REVIEW', 'VERIFY', 'COMPLETE', 'PENDING'];
+const PHASES = ['SCOPE', 'DESIGN', 'STORIES', 'REALIGN', 'WRITE-TESTS', 'IMPLEMENT', 'QA', 'COMPLETE', 'PENDING'];
 
 // Valid transitions (from -> [allowed destinations])
 // New 3-stage workflow:
 //   Stage 1: DESIGN → SCOPE (one-time, define epics)
 //   Stage 2: STORIES (per-epic, define stories for current epic)
-//   Stage 3: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY (per-story)
+//   Stage 3: REALIGN → WRITE-TESTS → IMPLEMENT → QA (per-story)
 const VALID_TRANSITIONS = {
   'SCOPE': ['DESIGN', 'STORIES'],           // After scope (epics defined), design wireframes or start stories
   'DESIGN': ['SCOPE', 'STORIES'],           // After design, back to scope or to stories
-  'STORIES': ['REALIGN', 'SPECIFY'],        // After stories defined, realign or specify first story
-  'REALIGN': ['SPECIFY'],                   // After realign, proceed to specify
-  'SPECIFY': ['IMPLEMENT'],                 // After writing tests, implement
-  'IMPLEMENT': ['REVIEW'],                  // After implementation, review
-  'REVIEW': ['VERIFY', 'IMPLEMENT'],        // After review, verify (or back to implement if issues)
-  'VERIFY': ['COMPLETE', 'IMPLEMENT'],      // After verify, story complete (or back to implement)
+  'STORIES': ['REALIGN', 'WRITE-TESTS'],    // After stories defined, realign or write tests for first story
+  'REALIGN': ['WRITE-TESTS'],               // After realign, proceed to write tests
+  'WRITE-TESTS': ['IMPLEMENT'],             // After writing tests, implement
+  'IMPLEMENT': ['QA'],                      // After implementation, QA (review + quality gates)
+  'QA': ['COMPLETE', 'IMPLEMENT'],          // After QA, story complete (or back to implement if issues)
   'COMPLETE': ['REALIGN', 'STORIES'],       // After story complete, next story's realign or next epic's stories
-  'PENDING': ['REALIGN', 'SPECIFY'],        // Pending story can start realign or specify
+  'PENDING': ['REALIGN', 'WRITE-TESTS'],    // Pending story can start realign or write tests
   'NONE': ['SCOPE', 'STORIES', 'REALIGN']   // Initial state
 };
 
@@ -55,9 +59,9 @@ const VALID_TRANSITIONS = {
 // HELPERS
 // =============================================================================
 
-function ensureContextDir() {
-  if (!fs.existsSync(CONTEXT_DIR)) {
-    fs.mkdirSync(CONTEXT_DIR, { recursive: true });
+function ensureStateDir() {
+  if (!fs.existsSync(STATE_DIR)) {
+    fs.mkdirSync(STATE_DIR, { recursive: true });
   }
 }
 
@@ -75,7 +79,7 @@ function readState() {
 }
 
 function writeState(state) {
-  ensureContextDir();
+  ensureStateDir();
   state.lastUpdated = new Date().toISOString();
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
@@ -130,8 +134,8 @@ function validateTransition(currentPhase, targetPhase, state, epicNum, storyNum)
     }
   }
 
-  // Special case: REALIGN/SPECIFY for story 2+ requires previous story to be COMPLETE
-  if (storyNum && storyNum > 1 && ['REALIGN', 'SPECIFY'].includes(targetPhase)) {
+  // Special case: REALIGN/WRITE-TESTS for story 2+ requires previous story to be COMPLETE
+  if (storyNum && storyNum > 1 && ['REALIGN', 'WRITE-TESTS'].includes(targetPhase)) {
     const epicState = state?.epics?.[epicNum];
     const prevStory = epicState?.stories?.[storyNum - 1];
     if (!prevStory || prevStory.phase !== 'COMPLETE') {
@@ -164,11 +168,10 @@ const PHASE_PREREQUISITES = {
   'DESIGN': [], // Can start design anytime
   'STORIES': ['SCOPE'], // Need epics defined before defining stories
   'REALIGN': ['STORIES'], // Need stories defined for current epic
-  'SPECIFY': ['STORIES'], // Need stories to generate tests from
-  'IMPLEMENT': ['SPECIFY'], // Need tests to implement against
-  'REVIEW': ['IMPLEMENT'], // Need implementation to review
-  'VERIFY': ['REVIEW'], // Need review complete
-  'COMPLETE': ['VERIFY'] // Need verification to complete
+  'WRITE-TESTS': ['STORIES'], // Need stories to generate tests from
+  'IMPLEMENT': ['WRITE-TESTS'], // Need tests to implement against
+  'QA': ['IMPLEMENT'], // Need implementation to review and validate
+  'COMPLETE': ['QA'] // Need QA complete
 };
 
 function runValidationScript(phase, epicNum) {
@@ -292,8 +295,8 @@ function repairState() {
     confidenceScore -= 10;
   }
 
-  // Check for quality gate status (indicates VERIFY completed)
-  const qualityGateStatus = '.claude/context/quality-gate-status.json';
+  // Check for quality gate status (indicates QA completed)
+  const qualityGateStatus = 'generated-docs/context/quality-gate-status.json';
   const hasQualityGate = fs.existsSync(qualityGateStatus);
   if (hasQualityGate) {
     detected.push('Quality gate status file exists');
@@ -342,7 +345,7 @@ function repairState() {
 
     // Check for review findings in context
     let hasReviewFindings = false;
-    const reviewFindingsPath = '.claude/context/review-findings.json';
+    const reviewFindingsPath = 'generated-docs/context/review-findings.json';
     if (fs.existsSync(reviewFindingsPath)) {
       try {
         const findings = JSON.parse(fs.readFileSync(reviewFindingsPath, 'utf-8'));
@@ -406,7 +409,7 @@ function repairState() {
         if (!hasUncheckedCriteria) {
           storyPhase = 'COMPLETE';
         } else if (!storyHasTests) {
-          storyPhase = 'SPECIFY';
+          storyPhase = 'WRITE-TESTS';
           allStoriesComplete = false;
           if (!firstIncompleteStory) firstIncompleteStory = storyNum;
         } else {
@@ -425,8 +428,8 @@ function repairState() {
         epicPhase = 'COMPLETE';
         detected.push(`Epic ${epic.num}: All ${storyFiles.length} stories complete - COMPLETE`);
       } else if (hasReviewMarker || (hasQualityGate && hasReviewFindings)) {
-        epicPhase = 'VERIFY';
-        detected.push(`Epic ${epic.num}: Has review artifacts - VERIFY phase`);
+        epicPhase = 'QA';
+        detected.push(`Epic ${epic.num}: Has review artifacts - QA phase`);
       } else {
         epicPhase = storyStates[firstIncompleteStory]?.phase || 'IMPLEMENT';
         detected.push(`Epic ${epic.num}: Story ${firstIncompleteStory} in ${epicPhase} phase`);
@@ -549,6 +552,7 @@ function transitionPhase(epicNum, targetPhase, storyNum, options = {}) {
       currentEpic: epicNum,
       currentStory: storyNum || null,
       currentPhase: 'NONE',
+      phaseStatus: 'ready',
       epics: {}
     };
   }
@@ -606,7 +610,7 @@ function transitionPhase(epicNum, targetPhase, storyNum, options = {}) {
   }
 
   // Update state based on whether this is a story-level or epic-level transition
-  const isStoryPhase = ['REALIGN', 'SPECIFY', 'IMPLEMENT', 'REVIEW', 'VERIFY', 'COMPLETE'].includes(targetPhase) && storyNum;
+  const isStoryPhase = ['REALIGN', 'WRITE-TESTS', 'IMPLEMENT', 'QA', 'COMPLETE'].includes(targetPhase) && storyNum;
 
   if (isStoryPhase) {
     // Story-level transition
@@ -617,6 +621,7 @@ function transitionPhase(epicNum, targetPhase, storyNum, options = {}) {
     state.currentStory = storyNum;
     state.currentPhase = targetPhase;
     state.currentEpic = epicNum;
+    state.phaseStatus = 'ready'; // Phase transitioned but work not yet started
 
     // Handle story completion
     if (targetPhase === 'COMPLETE') {
@@ -643,16 +648,19 @@ function transitionPhase(epicNum, targetPhase, storyNum, options = {}) {
         if (state.totalEpics && epicNum >= state.totalEpics) {
           state.featureComplete = true;
           state.currentPhase = 'COMPLETE';
+          state.phaseStatus = 'complete'; // Feature fully complete
         } else {
           // More epics - advance to STORIES for next epic
           state.currentEpic = epicNum + 1;
           state.currentStory = null;
           state.currentPhase = 'STORIES';
+          state.phaseStatus = 'ready'; // Next epic ready to start
         }
       } else {
         // More stories - advance to REALIGN for next story
         state.currentStory = storyNum + 1;
         state.currentPhase = 'REALIGN';
+        state.phaseStatus = 'ready'; // Next story ready to start
         // Mark next story as PENDING if it doesn't exist
         if (!epicState.stories[storyNum + 1]) {
           epicState.stories[storyNum + 1] = { phase: 'PENDING' };
@@ -664,6 +672,7 @@ function transitionPhase(epicNum, targetPhase, storyNum, options = {}) {
     state.currentEpic = epicNum;
     state.currentPhase = targetPhase;
     state.epics[epicNum].phase = targetPhase;
+    state.phaseStatus = 'ready'; // Phase transitioned but work not yet started
 
     // If starting STORIES phase, reset story tracking
     if (targetPhase === 'STORIES') {
@@ -741,6 +750,48 @@ function transitionPhase(epicNum, targetPhase, storyNum, options = {}) {
   }
 
   console.log(JSON.stringify(response, null, 2));
+}
+
+function markStarted() {
+  const state = readState();
+
+  if (!state) {
+    console.log(JSON.stringify({
+      status: 'error',
+      message: 'No workflow state found. Cannot mark phase as started.'
+    }, null, 2));
+    process.exit(1);
+  }
+
+  if (state.phaseStatus === 'in_progress') {
+    console.log(JSON.stringify({
+      status: 'ok',
+      message: 'Phase already marked as in progress',
+      state: {
+        epic: state.currentEpic,
+        story: state.currentStory,
+        phase: state.currentPhase,
+        phaseStatus: state.phaseStatus
+      }
+    }, null, 2));
+    return;
+  }
+
+  const previousStatus = state.phaseStatus || 'ready';
+  state.phaseStatus = 'in_progress';
+  writeState(state);
+
+  console.log(JSON.stringify({
+    status: 'ok',
+    message: `Phase ${state.currentPhase} marked as in progress`,
+    previousStatus,
+    state: {
+      epic: state.currentEpic,
+      story: state.currentStory,
+      phase: state.currentPhase,
+      phaseStatus: state.phaseStatus
+    }
+  }, null, 2));
 }
 
 function setTotalEpics(total) {
@@ -827,6 +878,7 @@ function initState(initialPhase) {
     currentEpic: 1,
     currentStory: null,
     currentPhase: initialPhase,
+    phaseStatus: 'ready', // Phase set but work not yet started
     epics: {
       1: { phase: initialPhase, stories: {} }
     },
@@ -858,6 +910,7 @@ function printUsage() {
 Usage:
   node .claude/scripts/transition-phase.js --epic <N> --to <PHASE> [--story <M>] [--validate] [--verify-output]
   node .claude/scripts/transition-phase.js --current --to <PHASE> [--story <M>] [--validate] [--verify-output]
+  node .claude/scripts/transition-phase.js --mark-started
   node .claude/scripts/transition-phase.js --init [DESIGN|SCOPE]
   node .claude/scripts/transition-phase.js --set-total-epics <N>
   node .claude/scripts/transition-phase.js --set-total-stories <N> --epic <E>
@@ -867,15 +920,21 @@ Usage:
 Workflow Structure (3 Stages):
   Stage 1: DESIGN (once) → SCOPE (define epics only)
   Stage 2: Per-Epic: STORIES (define stories for current epic)
-  Stage 3: Per-Story: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY
+  Stage 3: Per-Story: REALIGN → WRITE-TESTS → IMPLEMENT → QA
+
+Phase Status:
+  When transitioning to a phase, phaseStatus is set to "ready" (work not yet started).
+  When an agent begins work, it calls --mark-started to set phaseStatus to "in_progress".
+  This allows /status to distinguish between "ready for X" vs "X in progress".
 
 Options:
   --epic <N>              Epic number for transitions
   --current               Use current epic from state (alternative to --epic)
   --to <PHASE>            Target phase: ${PHASES.join(', ')}
-  --story <M>             Story number for per-story phases (REALIGN through VERIFY)
+  --story <M>             Story number for per-story phases (REALIGN through QA)
   --validate              Check prerequisites before allowing transition
   --verify-output         Validate that the FROM phase created expected outputs
+  --mark-started          Mark current phase as in_progress (call when agent starts work)
   --init [PHASE]          Initialize workflow state (use DESIGN or SCOPE, defaults to DESIGN)
   --set-total-epics <N>   Set the total number of epics for this feature
   --set-total-stories <N> Set total stories for an epic (requires --epic)
@@ -895,11 +954,13 @@ Examples:
   # Story-level transitions
   node .claude/scripts/transition-phase.js --set-total-stories 4 --epic 1
   node .claude/scripts/transition-phase.js --epic 1 --story 1 --to REALIGN
-  node .claude/scripts/transition-phase.js --current --story 1 --to SPECIFY --verify-output
+  node .claude/scripts/transition-phase.js --current --story 1 --to WRITE-TESTS --verify-output
   node .claude/scripts/transition-phase.js --current --story 1 --to IMPLEMENT
-  node .claude/scripts/transition-phase.js --current --story 1 --to REVIEW
-  node .claude/scripts/transition-phase.js --current --story 1 --to VERIFY
+  node .claude/scripts/transition-phase.js --current --story 1 --to QA
   node .claude/scripts/transition-phase.js --current --story 1 --to COMPLETE
+
+  # Mark phase as started (agent calls this when beginning work)
+  node .claude/scripts/transition-phase.js --mark-started
 
   # Show state
   node .claude/scripts/transition-phase.js --show
@@ -921,6 +982,11 @@ function main() {
 
   if (args.includes('--repair')) {
     repairState();
+    return;
+  }
+
+  if (args.includes('--mark-started')) {
+    markStarted();
     return;
   }
 
@@ -1058,7 +1124,7 @@ function main() {
   }
 
   // Validate that story-level phases have a story number
-  const storyLevelPhases = ['REALIGN', 'SPECIFY', 'IMPLEMENT', 'REVIEW', 'VERIFY'];
+  const storyLevelPhases = ['REALIGN', 'WRITE-TESTS', 'IMPLEMENT', 'QA'];
   if (storyLevelPhases.includes(targetPhase) && !storyNum) {
     // Try to use current story from state if available
     const state = readState();

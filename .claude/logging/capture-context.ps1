@@ -1684,9 +1684,9 @@ $details
     }
 
     'pre_compact' {
-        # IMPORTANT: This fires before /compact (manual or automatic compaction)
+        # IMPORTANT: This fires before auto-compaction (or manual /compact)
         # This does NOT fire on /clear - /clear does not trigger any hooks
-        # Use /compact instead of /clear to capture session summaries
+        # After compaction, inject-phase-context.ps1 restores workflow instructions
 
         # Parse transcript for full conversation before it's compacted
         $transcriptPath = $hookData.transcript_path

@@ -112,14 +112,14 @@ There are errors in future story tests but that's acceptable.
 The TDD workflow generates tests **one epic at a time**, immediately before implementing that epic:
 
 ```
-DESIGN (once) → PLAN → [SPECIFY → IMPLEMENT → REVIEW → VERIFY] per epic
+DESIGN (once) → PLAN → [WRITE-TESTS → IMPLEMENT → QA] per epic
 ```
 
 **How it works:**
 1. **PLAN**: Feature-planner creates stories for the current epic only
-2. **SPECIFY**: Test-generator creates tests for the current epic only
+2. **WRITE-TESTS**: Test-generator creates tests for the current epic only
 3. **IMPLEMENT**: Developer implements code to make tests pass
-4. **REVIEW/VERIFY**: Code review and quality gates run
+4. **QA**: Code review and quality gates run
 5. **Repeat**: Return to PLAN for next epic's stories
 
 **Why this approach:**
@@ -128,13 +128,13 @@ DESIGN (once) → PLAN → [SPECIFY → IMPLEMENT → REVIEW → VERIFY] per epi
 - ✅ CI/CD friendly - no skipped tests needed
 - ✅ Clear pass/fail status at all times
 
-### During SPECIFY Phase
+### During WRITE-TESTS Phase
 
 When tests are first generated for an epic:
 - Tests WILL fail (imports don't exist yet) - this is expected TDD behavior
 - Tests from PREVIOUS epics should still pass
 - The IMPLEMENT phase follows immediately, so brief test failures are acceptable
-- After IMPLEMENT completes, ALL tests must pass before VERIFY
+- After IMPLEMENT completes, ALL tests must pass before QA
 
 **Agents MUST NOT:**
 - Generate tests for ALL epics upfront
@@ -155,7 +155,7 @@ When tests are first generated for an epic:
 
 ### What Agents MUST Say
 
-When Gate 3 fails during SPECIFY phase (before IMPLEMENT):
+When Gate 3 fails during WRITE-TESTS phase (before IMPLEMENT):
 
 ```markdown
 Gate 3: Code Quality ❌ FAIL
@@ -167,7 +167,7 @@ The automated checks found:
 
 These errors are expected in TDD - tests reference components that will be created in the IMPLEMENT phase.
 
-**Note:** This is normal during the SPECIFY → IMPLEMENT transition. The IMPLEMENT phase follows immediately to make these tests pass.
+**Note:** This is normal during the WRITE-TESTS → IMPLEMENT transition. The IMPLEMENT phase follows immediately to make these tests pass.
 
 Proceeding to IMPLEMENT phase.
 ```
@@ -208,10 +208,10 @@ Verified by user
 **Status: Ready to Commit**
 ```
 
-### Example 2: Gate 3 Fails During SPECIFY Phase (Expected)
+### Example 2: Gate 3 Fails During WRITE-TESTS Phase (Expected)
 
 ```markdown
-# Quality Gate Report (SPECIFY Phase)
+# Quality Gate Report (WRITE-TESTS Phase)
 
 ## Gate 3: Code Quality ❌ FAIL (Expected)
 - TypeScript: 30 errors (test files for this epic)

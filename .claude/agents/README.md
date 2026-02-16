@@ -5,25 +5,25 @@ This directory contains specialized Claude Code agents that support a **Test-Dri
 ## TDD Workflow Overview
 
 ```
-DESIGN (once) → PLAN (all stories) → [REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY] per epic
+DESIGN (once) → SCOPE (epics only) → [STORIES → [REALIGN → WRITE-TESTS → IMPLEMENT → QA] per story] per epic
 ```
 
 **Expanded view:**
 ```
-[ui-ux-designer] → feature-planner → [feature-planner] → test-generator → developer → code-reviewer → quality-gate-checker
-     DESIGN            PLAN             REALIGN           SPECIFY        IMPLEMENT      REVIEW           VERIFY
-                   (all epics)        (per epic)        (per epic)      (per epic)    (per epic)       (per epic)
+[ui-ux-designer] → feature-planner → feature-planner → feature-planner → test-generator → developer → code-reviewer
+     DESIGN            SCOPE             STORIES           REALIGN          WRITE-TESTS     IMPLEMENT      QA
+                   (all epics)        (per epic)        (per story)       (per story)     (per story)   (per story)
 ```
 
 | Phase | Agent | Description |
 |-------|-------|-------------|
 | **DESIGN** | ui-ux-designer | Create wireframes for UI features (optional, once) |
-| **PLAN** | feature-planner | Define ALL epics, stories, and acceptance criteria upfront |
-| **REALIGN** | feature-planner | Revise upcoming epic's stories based on discovered impacts (per epic) |
-| **SPECIFY** | test-generator | Write failing tests before implementation (per epic) |
-| **IMPLEMENT** | developer | Implement code to make tests pass (per epic) |
-| **REVIEW** | code-reviewer | Review code quality and suggest improvements (per epic) |
-| **VERIFY** | quality-gate-checker | Validate all quality gates before commit (per epic) |
+| **SCOPE** | feature-planner | Define ALL epics upfront (no stories yet) |
+| **STORIES** | feature-planner | Define stories for the current epic only |
+| **REALIGN** | feature-planner | Revise upcoming story based on discovered impacts (per story) |
+| **WRITE-TESTS** | test-generator | Write failing tests before implementation (per story) |
+| **IMPLEMENT** | developer | Implement code to make tests pass (per story) |
+| **QA** | code-reviewer | Review code quality, run quality gates, commit (per story) |
 
 ---
 
@@ -91,7 +91,7 @@ Generate tests for Epic 1: Basic Auth
 
 **Key outputs:**
 - `web/src/__tests__/integration/[feature].test.tsx`
-- `.claude/context/test-coverage.json`
+- `generated-docs/context/test-coverage.json`
 
 ---
 
@@ -117,8 +117,8 @@ Start implementing the user authentication stories
 
 **Key behaviors:**
 - Implements exactly ONE story at a time
-- Waits for user approval before committing
 - Locates and makes failing tests pass
+- Runs all 4 quality gates before transitioning to QA
 - Follows project patterns (App Router, Shadcn UI, API client)
 
 ---
@@ -132,7 +132,7 @@ Start implementing the user authentication stories
 **When to use:**
 - After implementing a feature (IMPLEMENT phase complete)
 - Before creating a PR
-- As part of the REVIEW phase
+- As part of the QA phase
 
 **Invocation:**
 ```
@@ -154,33 +154,6 @@ Review the code changes for the portfolio dashboard
 
 ---
 
-### 6. Quality Gate Checker
-
-**File:** [quality-gate-checker.md](quality-gate-checker.md)
-
-**Purpose:** Validates all 5 quality gates pass before committing. Runs automated checks, prompts for manual verification, and generates a markdown report.
-
-**When to use:**
-- After code review is complete
-- Before committing and pushing to main
-- Can be invoked via `/quality-check` command
-
-**Invocation:**
-```
-Check if my feature is ready to commit
-```
-or
-```
-/quality-check
-```
-
-**The 5 Quality Gates:**
-1. Functional (manual) - Feature works as expected
-2. Security (automated) - npm audit, no secrets
-3. Code Quality (automated) - TypeScript, ESLint, build
-4. Testing (automated) - Vitest tests pass
-5. Performance (manual) - Page loads reasonably
-
 ---
 
 ## Workflow Recommendations
@@ -188,34 +161,30 @@ or
 ### Starting a New Feature
 
 1. **DESIGN (Optional):** Invoke `ui-ux-designer` if the feature has UI
-   - Approve screen list
-   - Agent creates ASCII wireframes for each screen
-   - Saves to `generated-docs/wireframes/`
+   - Approve screen list → approve wireframes → **mandatory /clear + /continue**
 
-2. **PLAN:** Invoke `feature-planner` with your feature spec
-   - Agent automatically checks for wireframes
-   - Approve epics
-   - Approve stories for each epic (one at a time, all upfront)
-   - Agent writes acceptance criteria to markdown files (with wireframe references)
+2. **SCOPE:** Invoke `feature-planner` with your feature spec
+   - Agent checks for wireframes, defines all epics
+   - Approve epic list → **mandatory /clear + /continue**
 
-3. **SPECIFY:** Invoke `test-generator` for Epic 1
-   - Generates failing tests based on acceptance criteria
-   - Tests will FAIL (this is expected!)
+3. **STORIES:** Invoke `feature-planner` for current epic
+   - Agent defines stories for THIS epic only
+   - Approve story list → proceeds directly to REALIGN
 
-4. **IMPLEMENT:** Invoke `developer` to implement the feature
-   - Implements one story at a time
-   - Creates draft PR and waits for approval
-   - Run `npm test` to verify tests pass
+4. **Per-story cycle:** REALIGN → WRITE-TESTS → IMPLEMENT → QA
+   - Transitions between these phases happen automatically (no stops)
+   - IMPLEMENT uses 2 scoped developer calls (implement, then quality gates)
+   - QA uses 2 scoped code-reviewer calls (review, then gates + verify + commit)
+   - After QA manual verification → **mandatory /clear + /continue**
 
-5. **REVIEW:** Invoke `code-reviewer`
-   - Address any critical issues
-   - Consider suggestions for improvement
+5. **Epic completion:** After last story's QA, code-reviewer presents epic review
+   - **Mandatory /clear + /continue** before starting next epic
 
-6. **VERIFY:** Invoke `quality-gate-checker`
-   - All 5 gates must pass
-   - Get markdown report summarizing quality check
+6. **Repeat:** Next epic's STORIES phase, or feature complete
 
-7. **Repeat:** Return to feature-planner for Epic 2
+### Context Management
+
+Context clearing happens at 4 mandatory boundaries (wireframe approval, epic list approval, story QA completion, epic completion). Between these boundaries, phases transition automatically. A post-compaction hook (`inject-phase-context.ps1`) restores workflow instructions if auto-compaction fires mid-workflow.
 
 ### Quick Quality Check
 
@@ -235,15 +204,15 @@ Review the authentication module for security issues
 
 ## Context Directory
 
-The `.claude/context/` directory is used for agent-to-agent communication. Files here are temporary and should not be committed.
+The `generated-docs/context/` directory is used for agent-to-agent communication. Files here are temporary and gitignored.
 
 | File | Created By | Used By |
 |------|------------|---------|
-| `feature-spec.json` | feature-planner | test-generator |
-| `test-coverage.json` | test-generator | quality-gate-checker |
-| `review-findings.json` | code-reviewer | quality-gate-checker |
-| `quality-gate-status.json` | quality-gate-checker | (final output) |
 | `workflow-state.json` | transition scripts | all agents |
+| `feature-spec.json` | feature-planner | test-generator |
+| `test-coverage.json` | test-generator | code-reviewer |
+| `review-findings.json` | code-reviewer | code-reviewer (QA phase) |
+| `quality-gate-status.json` | code-reviewer | (final output) |
 
 ---
 
@@ -267,10 +236,10 @@ When running transition scripts, always check the JSON output:
 
 ```bash
 # Run the transition
-node .claude/scripts/transition-phase.js --current --to SPECIFY
+node .claude/scripts/transition-phase.js --current --to WRITE-TESTS
 
 # Expected success output:
-# { "status": "ok", "message": "Transitioned Epic 1 from PLAN to SPECIFY", ... }
+# { "status": "ok", "message": "Transitioned Epic 1 from PLAN to WRITE-TESTS", ... }
 
 # Error output (DO NOT PROCEED):
 # { "status": "error", "message": "Invalid transition...", ... }
@@ -287,7 +256,7 @@ Use these flags for additional safety:
 
 ```bash
 # Check prerequisites before transitioning
-node .claude/scripts/transition-phase.js --epic 1 --to SPECIFY --validate
+node .claude/scripts/transition-phase.js --epic 1 --to WRITE-TESTS --validate
 
 # Verify the FROM phase created expected outputs
 node .claude/scripts/transition-phase.js --current --to IMPLEMENT --verify-output

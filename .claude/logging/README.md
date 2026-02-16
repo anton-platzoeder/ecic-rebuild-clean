@@ -74,9 +74,11 @@ All timestamps use **UTC with Z suffix** (e.g., `2025-12-04 14:30Z`) for consist
 
 | Method | What Happens | Use When |
 |--------|--------------|----------|
-| `/clear` | Auto-recovered on next session | Fresh start, zero tokens |
-| `/compact` | PreCompact hook captures full summary | Reduce tokens, keep context |
+| `/clear` | Auto-recovered on next session | Fresh start at context-clearing boundaries |
+| Auto-compaction | PreCompact hook logs, then post-compaction hook restores workflow state | Automatic (handled by hooks) |
 | Exit Claude Code | SessionEnd hook captures summary | Normal exit |
+
+**Note:** `/compact` is not recommended for workflow sessions. It triggers the same lossy compression as auto-compaction. The post-compaction hook (`inject-phase-context.ps1`) handles instruction recovery automatically.
 
 ## Security Features
 
@@ -120,7 +122,7 @@ To modify logging behavior, edit [capture-context.ps1](capture-context.ps1):
 
 Session summaries are added when:
 - You exit Claude Code completely (SessionEnd)
-- You run `/compact` (PreCompact)
+- Auto-compaction fires (PreCompact hook captures state)
 - A cleared session is recovered on next SessionStart
 
 **Note:** `/clear` does not trigger any hooks directly - data is recovered when the next session starts.

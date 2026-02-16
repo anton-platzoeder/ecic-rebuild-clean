@@ -82,7 +82,7 @@ npm run dev
    - Invokes feature-planner agent for scoping
    - Uses test-generator for tests
    - Guides you through implementation
-   - Validates with code-reviewer and quality-gate-checker
+   - Validates with code-reviewer (QA phase)
 
 4. **Commit and push:**
    - Runs quality checks
@@ -127,7 +127,7 @@ What would you prefer?
 
 ## Workflow 4: Resume Interrupted TDD Workflow
 
-**Scenario:** The `/start` workflow was interrupted (closed VSCode, lost connection, etc.) and you want to resume from where you left off.
+**Scenario:** The `/start` workflow was interrupted (closed VSCode, lost connection, etc.) or you ran `/clear` at a context-clearing boundary and need to resume.
 
 ### Steps:
 
@@ -136,10 +136,10 @@ What would you prefer?
 /continue
 
 # Claude will:
-# 1. Analyze project state (wireframes, stories, tests, implementation)
-# 2. Detect current phase for each epic
-# 3. Show status table with resume point
-# 4. Resume with the appropriate agent
+# 1. Validate workflow state from workflow-state.json
+# 2. Auto-proceed on high confidence (no confirmation needed)
+# 3. Resume with the appropriate agent
+# 4. Use scoped calls for IMPLEMENT and QA phases
 ```
 
 ### What Claude Will Show:
@@ -231,18 +231,18 @@ For each epic:
 
 - **STORIES**: Define stories and acceptance criteria for the current epic only (not all epics upfront)
 
-### Stage 3: Per-Story Iteration (REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY)
+### Stage 3: Per-Story Iteration (REALIGN → WRITE-TESTS → IMPLEMENT → QA)
 
 ```
 For each story in the epic:
-  feature-planner → test-generator → developer → code-reviewer → quality-gate-checker → commit & push
-      REALIGN          SPECIFY        IMPLEMENT      REVIEW           VERIFY
+  feature-planner → test-generator → developer → code-reviewer → commit & push
+      REALIGN          WRITE-TESTS        IMPLEMENT      QA
 
 (repeat for each story, then move to next epic's STORIES phase...)
 ```
 
 **REALIGN Phase:**
-- Runs **before each story** (before SPECIFY)
+- Runs **before each story** (before WRITE-TESTS)
 - Feature-planner checks `generated-docs/discovered-impacts.md` for impacts affecting the upcoming story
 - If impacts exist: revises the story and gets user approval
 - If no impacts: completes automatically
@@ -254,27 +254,44 @@ For each story in the epic:
 **✅ Do this instead:**
 - Define epics upfront (SCOPE phase)
 - For each epic: Define stories (STORIES phase)
-- For each story: REALIGN → Generate tests → Implement → Review → Verify → Commit
+- For each story: REALIGN → Generate tests → Implement → QA → Commit
 
 **Why this matters:**
 - ✅ Epic scope visibility before story implementation begins
 - ✅ Stories defined per-epic for flexibility to pivot
 - ✅ Tests written immediately before each story (true TDD)
 - ✅ Quality gates always pass (no skipped tests)
-- ✅ One commit per story after VERIFY passes
+- ✅ One commit per story after QA passes
 - ✅ Early feedback through per-story review
 - ✅ Faster pivots - discover issues per-story, not per-epic
 - ✅ Implementation learnings feed back into future story planning via REALIGN
 
 ### Discovered Impacts
 
-During implementation (SPECIFY, IMPLEMENT phases), agents may discover that future stories need changes. When this happens:
+During implementation (WRITE-TESTS, IMPLEMENT phases), agents may discover that future stories need changes. When this happens:
 
 1. **Agent flags the impact** by appending to `generated-docs/discovered-impacts.md`
 2. **Impact is processed** during REALIGN phase before the affected story starts
 3. **User approves** any story revisions before proceeding
 
 See `_feature-overview.md` in `generated-docs/stories/` for the lightweight index of epics, and `_epic-overview.md` in each epic directory for stories.
+
+### Context Management
+
+Context clearing happens at **4 mandatory boundaries** during the workflow:
+
+| # | Boundary | When |
+|---|----------|------|
+| 1 | Wireframe approval | DESIGN complete → before SCOPE |
+| 2 | Epic list approval | SCOPE complete → before STORIES |
+| 3 | Manual verification after QA | Each story's QA complete → before next REALIGN |
+| 4 | Epic completion review | Epic complete → before next STORIES |
+
+At these points, run `/clear` then `/continue`. All other phase transitions happen automatically.
+
+**Post-compaction hooks** (`inject-phase-context.ps1`, `inject-agent-context.ps1`) automatically restore workflow state and instructions if auto-compaction fires mid-workflow. This provides a safety net against instruction loss in long sessions.
+
+**Scoped calls** reduce context accumulation: IMPLEMENT uses 2 developer calls (implement, then quality gates) and QA uses 2 code-reviewer calls (review, then gates + verify + commit).
 
 ---
 
@@ -310,7 +327,7 @@ See `_feature-overview.md` in `generated-docs/stories/` for the lightweight inde
 
 ### For Context Switching:
 - Claude remembers in-progress features
-- Context stored in `.claude/context/`
+- Workflow state stored in `generated-docs/context/`
 - Safe to close and reopen VSCode
 - Type `/continue` to resume
 
@@ -324,7 +341,7 @@ See `_feature-overview.md` in `generated-docs/stories/` for the lightweight inde
 - Try running `npm install` manually
 
 ### "I want to start over with a feature"
-- Delete files from `.claude/context/`
+- Delete `generated-docs/context/` contents
 - Type `/start` to begin fresh
 
 ### "Claude doesn't remember my in-progress feature"

@@ -1,26 +1,57 @@
 ---
 name: test-generator
-description: Generates comprehensive Vitest + React Testing Library tests BEFORE implementation (SPECIFY phase). Creates failing tests that define acceptance criteria as executable code.
+description: Generates comprehensive Vitest + React Testing Library tests BEFORE implementation (WRITE-TESTS phase). Creates failing tests that define acceptance criteria as executable code.
 model: sonnet
-tools: Read, Write, Glob, Grep, Bash
+tools: Read, Write, Glob, Grep, Bash, TodoWrite
 color: red
 ---
 
 # Test Generator Agent
 
-**Role:** SPECIFY phase - Write failing tests BEFORE implementation
+**Role:** WRITE-TESTS phase - Write failing tests BEFORE implementation
+
+## Agent Startup
+
+**First action when starting work** (before any other steps):
+
+```bash
+node .claude/scripts/transition-phase.js --mark-started
+```
+
+This marks the current phase as "in_progress" for accurate status reporting.
+
+### Initialize Progress Display
+
+After marking the phase as started, generate and display the workflow progress list:
+
+```bash
+node .claude/scripts/generate-todo-list.js
+```
+
+Parse the JSON output and call `TodoWrite` with the resulting array. Then add your agent sub-tasks after the item with `status: "in_progress"`. Prefix sub-task content with `"    >> "` to distinguish from workflow items.
+
+**Your sub-tasks:**
+1. `"    >> Reading story acceptance criteria"`
+2. `"    >> Mapping criteria to test scenarios"`
+3. `"    >> Generating test file"`
+4. `"    >> Verifying tests fail (TDD red)"`
+5. `"    >> Checking lint/build pass"`
+
+Start all sub-tasks as `"pending"`. As you progress, mark the current sub-task as `"in_progress"` and completed ones as `"completed"`. Re-run `generate-todo-list.js` before each TodoWrite call to get the current base list, then merge in your updated sub-tasks.
+
+After completing your work and running the transition script, call `generate-todo-list.js` one final time and update TodoWrite with just the base list (no agent sub-tasks).
 
 ## Workflow Position
 
 ```
-DESIGN (once) → SCOPE → [STORIES → [REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY] per story] per epic
+DESIGN (once) → SCOPE → [STORIES → [REALIGN → WRITE-TESTS → IMPLEMENT → QA] per story] per epic
                                                 ↑
                                            YOU ARE HERE
 ```
 
 ```
-feature-planner → feature-planner → feature-planner → test-generator → developer → code-reviewer → quality-gate-checker
-     SCOPE           STORIES           REALIGN            SPECIFY        IMPLEMENT      REVIEW           VERIFY
+feature-planner → feature-planner → feature-planner → test-generator → developer → code-reviewer
+     SCOPE           STORIES           REALIGN           WRITE-TESTS     IMPLEMENT      QA
 ```
 
 Runs **once per story**, immediately before that story's implementation begins.
@@ -228,7 +259,7 @@ cd web && npm test -- --testPathPattern="epic-N-story-M"
 
 ## Do NOT Commit Yet
 
-**IMPORTANT:** Do NOT commit or push tests during the SPECIFY phase.
+**IMPORTANT:** Do NOT commit or push tests during the WRITE-TESTS phase.
 
 Tests are intentionally failing at this point (TDD red phase - imports don't exist yet). Committing failing tests would cause quality gates to fail unnecessarily, making it harder to identify real problems.
 
@@ -265,21 +296,10 @@ If you discover issues affecting future stories (missing API fields, architectur
 
 ## Completion
 
-When tests are generated and verified to fail (but NOT committed):
+Return a concise summary:
 
-```markdown
-## Test Generation Complete
-
-**Epic [N], Story [M]: [Name]** - [X] test file(s), [Y] test cases
-**Status:** All tests fail as expected (TDD red phase)
-
-### Next: IMPLEMENT Phase
-
-**ORCHESTRATING AGENT:** Ask the user before proceeding:
-> "Ready for IMPLEMENT phase. Clear context first? (Recommended: yes)"
->
-> - Yes: User runs `/clear` then `/continue`
-> - No: Proceed to developer agent for Story [M]
+```
+WRITE-TESTS complete for Epic [N], Story [M]: [Name]. [X] test file(s), [Y] test cases. All tests fail as expected (TDD red). Ready for IMPLEMENT.
 ```
 
 ## Success Checklist

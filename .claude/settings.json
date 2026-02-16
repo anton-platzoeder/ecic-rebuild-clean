@@ -1,34 +1,29 @@
 {
   "permissions": {
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Read(*/.ssh/*)",
+      "Read(*.ssh/*)",
+      "Bash(*cat*id_rsa*)",
+      "Bash(*cat*.pem)",
+      "Bash(*cat*credentials*)",
+      "Bash(*type*id_rsa*)",
+      "Bash(*type*.pem)",
+      "Bash(*type*credentials*)",
+      "Bash(*Get-Content*id_rsa*)",
+      "Bash(*Get-Content*.pem*)",
+      "Bash(*Get-Content*credentials*)",
+      "Bash(*sed*id_rsa*)",
+      "Bash(*sed*.pem*)",
+      "Bash(*sed*credentials*)"
+    ],
     "allow": [
-      "Read",
-      "Edit",
-      "Write",
-      "Glob",
-      "Grep",
-      "Bash(npm *)",
-      "Bash(npx *)",
-      "Bash(node *)",
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git branch*)",
-      "Bash(git checkout *)",
-      "Bash(git stash*)",
-      "Bash(git show*)",
-      "Bash(git rev-parse*)",
-      "Bash(git merge-base*)",
-      "Bash(mkdir *)",
-      "Bash(ls *)",
-      "Bash(pwd)",
-      "Bash(which *)",
-      "Bash(type *)",
-      "Bash(cat *)",
-      "Bash(git push*)",
-      "Bash(git remote*)",
-      "Task"
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "mcp__shadcn-ui__*"
     ]
   },
   "hooks": {
@@ -52,6 +47,16 @@
             "type": "command",
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/logging/capture-context.ps1\" -EventType session_start",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/inject-phase-context.ps1\"",
+            "timeout": 5
           }
         ]
       }
@@ -88,6 +93,16 @@
             "type": "command",
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/logging/capture-context.ps1\" -EventType subagent_start",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "developer|test-generator|code-reviewer|feature-planner|ui-ux-designer",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/inject-agent-context.ps1\"",
+            "timeout": 5
           }
         ]
       }
@@ -129,6 +144,16 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \".claude/hooks/bash-permission-checker.ps1\"",
+            "timeout": 5
+          }
+        ]
+      },
       {
         "matcher": "*",
         "hooks": [

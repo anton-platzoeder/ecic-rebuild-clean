@@ -2,7 +2,7 @@
 name: agent-name
 description: Brief one-line description of what this agent does.
 model: sonnet
-tools: Read, Write, Glob, Grep, Bash
+tools: Read, Write, Glob, Grep, Bash, TodoWrite
 color: blue
 ---
 
@@ -10,13 +10,45 @@ color: blue
 
 **Role:** [PHASE] phase - Brief description of role in workflow
 
+## Agent Startup
+
+**First action when starting work** (before any other steps):
+
+```bash
+node .claude/scripts/transition-phase.js --mark-started
+```
+
+This marks the current phase as "in_progress" for accurate status reporting.
+
+### Initialize Progress Display
+
+After marking the phase as started, generate and display the workflow progress list:
+
+```bash
+node .claude/scripts/generate-todo-list.js
+```
+
+Parse the JSON output and call `TodoWrite` with the resulting array. Then add your agent sub-tasks after the item with `status: "in_progress"`. Prefix sub-task content with `"    >> "` to distinguish from workflow items.
+
+**Your sub-tasks** (provide both `content` and `activeForm` for each):
+- `content`: what to do — shown when pending or completed (e.g. "Run quality gates")
+- `activeForm`: what's happening — shown while in progress (e.g. "Running quality gates")
+
+1. `{ content: "    >> [First step description]", activeForm: "[First step]-ing..." }`
+2. `{ content: "    >> [Second step description]", activeForm: "[Second step]-ing..." }`
+3. `{ content: "    >> [Third step description]", activeForm: "[Third step]-ing..." }`
+
+Start all sub-tasks as `"pending"`. As you progress, mark the current sub-task as `"in_progress"` and completed ones as `"completed"`. Re-run `generate-todo-list.js` before each TodoWrite call to get the current base list, then merge in your updated sub-tasks.
+
+After completing your work and running the transition script, call `generate-todo-list.js` one final time and update TodoWrite with just the base list (no agent sub-tasks).
+
 ## Workflow Position
 
 ```
-feature-planner → test-generator → developer → code-reviewer → quality-gate-checker
-     PLAN            SPECIFY        IMPLEMENT      REVIEW           VERIFY
-                                       ↑
-                                  YOU ARE HERE
+feature-planner → test-generator → developer → code-reviewer
+     SCOPE/STORIES     WRITE-TESTS     IMPLEMENT      QA
+                                          ↑
+                                     YOU ARE HERE
 ```
 
 ---
@@ -47,7 +79,7 @@ feature-planner → test-generator → developer → code-reviewer → quality-g
 
 **Output:**
 - [What files this agent creates/modifies]
-- [Context files written to `.claude/context/`]
+- [Context files written to `generated-docs/context/`]
 
 ---
 
@@ -135,41 +167,15 @@ git push origin main
 
 ---
 
-## Completion and Handoff
+## Completion
 
-Once complete, provide this completion message:
+Return a concise summary to the orchestrator:
 
-```markdown
-## [Phase Name] Complete ✅
-
-[Summary of what was accomplished]
-
-### Summary
-
-- **[Metric 1]:** [Value]
-- **[Metric 2]:** [Value]
-
-### Next Phase: [NEXT_PHASE]
-
-The next step is [description of next phase].
-
----
-
-## ⚠️ MANDATORY: Context Clearing Checkpoint
-
-**ORCHESTRATING AGENT: You MUST stop here and ask the user about clearing context.**
-
-Do NOT automatically proceed to the next agent. The orchestrating agent must:
-1. Display this completion summary to the user
-2. Ask: "Would you like to clear context before proceeding to the [NEXT] phase? (Recommended: yes)"
-3. Wait for the user's explicit response
-4. If yes: Instruct user to run `/clear` then `/continue`
-5. If no: Then proceed to [next-agent]
-
-**This checkpoint is NOT optional.** Skipping it violates the Session Handoff Policy.
+```
+[PHASE] complete for Epic [N], Story [M]: [Name]. [Key metric]. Ready for [NEXT_PHASE].
 ```
 
-**IMPORTANT FOR ORCHESTRATING AGENT:** When you receive this output, you must relay the context clearing question to the user and wait for their response. Do NOT proceed to the next agent without user confirmation.
+The orchestrator manages context-clearing boundaries and phase transitions. Agents do not need to instruct the orchestrator about context clearing.
 
 ---
 
@@ -180,4 +186,3 @@ Do NOT automatically proceed to the next agent. The orchestrating agent must:
 - [ ] [Criterion 3]
 - [ ] **Workflow state updated** via transition script
 - [ ] **Artifacts committed and pushed**
-- [ ] **Context clearing prompt shown**

@@ -846,6 +846,196 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // GET /report-batches/:id/approvals (Epic 2 Story 6)
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'approvals' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+
+    return json([
+      {
+        id: 1,
+        batchId,
+        level: 1,
+        decision: 'Approved',
+        decidedBy: 'David Kim',
+        decidedAt: '2026-01-18T15:30:00Z',
+        comments: 'Data looks complete',
+        automatedActions: [
+          'Locked batch for Level 2 review',
+          'Notified Level 2 approvers',
+        ],
+      },
+    ]);
+  }
+
+  // GET /report-batches/:id/audit (Epic 2 Story 6)
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'audit' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page')) || 1;
+    const pageSize = Number(url.searchParams.get('pageSize')) || 20;
+
+    const allEvents = [
+      {
+        id: 4,
+        eventType: 'LEVEL_1_APPROVED',
+        timestamp: '2026-01-18T15:30:00Z',
+        user: 'David Kim',
+        action: 'Approved Level 1 review',
+        automatedActions: [
+          'Locked batch for Level 2 review',
+          'Notified Level 2 approvers',
+        ],
+      },
+      {
+        id: 3,
+        eventType: 'DATA_CONFIRMED',
+        timestamp: '2026-01-18T14:00:00Z',
+        user: 'Emily Johnson',
+        action: 'Confirmed data ready for approval',
+        automatedActions: [
+          `Created workflow instance ${batch.workflowInstanceId}`,
+          'Notified Level 1 approvers',
+        ],
+      },
+      {
+        id: 2,
+        eventType: 'CALCULATIONS_COMPLETED',
+        timestamp: '2026-01-18T12:00:00Z',
+        user: 'System',
+        action: 'All calculations completed successfully',
+        automatedActions: ['Updated batch status to CalculationsComplete'],
+      },
+      {
+        id: 1,
+        eventType: 'BATCH_CREATED',
+        timestamp: batch.createdAt,
+        user: batch.createdBy,
+        action: `Created batch for ${batch.reportDate} reporting`,
+        automatedActions: [
+          'Initialized file monitoring',
+          'Set up validation rules',
+        ],
+      },
+    ];
+
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const items = allEvents.slice(start, end);
+
+    return json({
+      items,
+      meta: {
+        page,
+        pageSize,
+        totalItems: allEvents.length,
+        totalPages: Math.ceil(allEvents.length / pageSize),
+      },
+    });
+  }
+
+  // GET /report-batches/:id/files (Epic 2 Story 8)
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'files' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+
+    return json([
+      {
+        id: 1,
+        fileName: 'holdings_2026-01-31.csv',
+        fileType: 'Holdings',
+        uploadedBy: 'Emily Johnson',
+        uploadedAt: '2026-01-16T09:00:00Z',
+        status: 'Valid',
+        recordCount: 1250,
+        errorCount: 0,
+      },
+      {
+        id: 2,
+        fileName: 'transactions_2026-01-31.csv',
+        fileType: 'Transactions',
+        uploadedBy: 'Emily Johnson',
+        uploadedAt: '2026-01-16T09:05:00Z',
+        status: 'Valid',
+        recordCount: 342,
+        errorCount: 0,
+      },
+      {
+        id: 3,
+        fileName: 'prices_2026-01-31.csv',
+        fileType: 'Prices',
+        uploadedBy: 'System',
+        uploadedAt: '2026-01-16T10:00:00Z',
+        status: 'Valid',
+        recordCount: 856,
+        errorCount: 0,
+      },
+    ]);
+  }
+
+  // GET /report-batches/:id/calculations (Epic 2 Story 8)
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'calculations' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+
+    const isComplete = batch.calculationStatus === 'Complete';
+    return json([
+      {
+        id: 1,
+        calculationType: 'Performance Attribution',
+        status: isComplete ? 'Complete' : 'Pending',
+        startedAt: isComplete ? '2026-01-17T08:00:00Z' : null,
+        completedAt: isComplete ? '2026-01-17T09:30:00Z' : null,
+        portfoliosProcessed: isComplete ? 12 : 0,
+        totalPortfolios: 12,
+      },
+      {
+        id: 2,
+        calculationType: 'Risk Metrics',
+        status: isComplete ? 'Complete' : 'Pending',
+        startedAt: isComplete ? '2026-01-17T09:30:00Z' : null,
+        completedAt: isComplete ? '2026-01-17T10:45:00Z' : null,
+        portfoliosProcessed: isComplete ? 12 : 0,
+        totalPortfolios: 12,
+      },
+      {
+        id: 3,
+        calculationType: 'Compliance Checks',
+        status: isComplete ? 'Complete' : 'Pending',
+        startedAt: isComplete ? '2026-01-17T10:45:00Z' : null,
+        completedAt: isComplete ? '2026-01-17T11:00:00Z' : null,
+        portfoliosProcessed: isComplete ? 12 : 0,
+        totalPortfolios: 12,
+      },
+    ]);
+  }
+
   return json({ message: `Mock API: GET /${path} not implemented` }, 404);
 }
 

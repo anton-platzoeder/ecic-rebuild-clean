@@ -10,63 +10,58 @@ Start the feature development workflow.
 
 - After SCOPE phase completes (epics defined)
 - After STORIES phase completes for each epic
-- After each story's VERIFY phase passes (commit includes tests + implementation)
+- After each story's QA phase passes (commit includes tests + implementation)
 - After creating multiple files (e.g., after every 2-3 wireframes)
 - Before handing off to another agent
 
-Each story is committed AFTER its VERIFY phase passes, not after IMPLEMENT.
+Each story is committed AFTER its QA phase passes, not after IMPLEMENT.
 
-## Session Handoff Policy (MANDATORY)
+## Context Management Policy
 
-**At every phase transition, you MUST stop and ask the user about clearing context.**
+Context clearing happens at **4 mandatory boundaries** where significant work completes and the next chunk is independent. The user must run `/clear` then `/continue` at each.
 
-This is **NOT optional**. Context clearing checkpoints occur:
-- Between major phases (DESIGN → SCOPE → STORIES)
-- Between story phases (REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY)
-- After each story's VERIFY phase (before next story's REALIGN)
-- Between epics (after last story's VERIFY, before next epic's STORIES)
+**Mandatory clearing boundaries:**
 
-When an agent completes a phase or story:
+| # | Boundary | Handled by |
+|---|----------|------------|
+| 1 | Wireframe approval (DESIGN complete) | Orchestrator instructs the user |
+| 2 | Epic list approval (SCOPE complete) | Orchestrator instructs the user |
+| 3 | Story QA complete | Code-reviewer return message (display and stop) |
+| 4 | Epic completion (last story in epic) | Code-reviewer return message (display and stop) |
 
-1. **STOP** - Do not immediately launch the next agent or start the next story
-2. **RELAY** - Show the user the agent's completion summary
-3. **ASK** - Explicitly ask: "Would you like to clear context before proceeding to [next phase/story]? (Recommended: yes)"
-4. **WAIT** - Do not proceed until the user responds
-5. **ACT** - If user says yes, instruct them to use `/clear` then `/continue`. If no, proceed accordingly.
+**Boundaries #1-2:** You (the orchestrator) instruct the user to run `/clear` then `/continue`.
 
-**Why this matters:**
-- Clean context for the next agent/story
-- No confusion from previous conversation state
-- Clear boundaries between phases and stories
-- Prevents token accumulation across long workflows
-- Each story implementation starts fresh
+**Boundaries #3-4:** The code-reviewer's return message already contains the clearing instruction. Display it to the user and **STOP** — do not launch the next agent. The user's `/clear` + `/continue` handles resumption.
 
-**Example of CORRECT behavior (between phases):**
+**All other phase transitions proceed directly** — launch the next agent without stopping. This includes: STORIES → REALIGN, REALIGN → WRITE-TESTS, WRITE-TESTS → IMPLEMENT, IMPLEMENT → QA.
+
+**Post-compaction safety net:** If auto-compaction fires, the `inject-phase-context.ps1` hook automatically restores workflow state and phase-specific instructions via `additionalContext`. This covers both the orchestrator and subagent sessions.
+
+**Example of CORRECT behavior (after code-reviewer returns):**
 ```
-Agent: "Wireframes complete. Files saved to generated-docs/wireframes/."
-You: "The ui-ux-designer has completed wireframes. Would you like to clear context before proceeding to the PLAN phase? (Recommended: yes)"
-User: "Yes" or "No"
-[Then proceed accordingly]
+code-reviewer returns: "WORKFLOW PAUSE — QA complete for Epic 1, Story 2: User Profile. Committed abc123.
+Please run /clear then /continue to proceed."
+You: [Display the message and STOP — do not launch next agent]
 ```
 
-**Example of CORRECT behavior (between stories):**
+**Example of CORRECT behavior (NOT a clearing boundary):**
 ```
-Agent: "Story 1 complete. Committed and pushed to main."
-You: "Story 1 is complete. Would you like to clear context before implementing Story 2? (Recommended: yes for stories with significant code changes)"
-User: "Yes" or "No"
-[Then proceed accordingly]
+test-generator: "Tests generated. Ready for IMPLEMENT."
+You: [Immediately launches developer agent — no stopping]
 ```
 
-**Example of INCORRECT behavior (DO NOT DO THIS):**
-```
-Agent: "Wireframes complete."
-You: [Immediately launches feature-planner without asking about context]
-```
+## Scoped Call Pattern
 
-```
-Agent: "Story 1 complete."
-You: [Immediately starts implementing Story 2 without asking about context]
-```
+For longer phases, split agent work into focused calls to reduce context accumulation:
+
+**IMPLEMENT phase — 2 developer calls:**
+- **Call A (Implement):** Read story + tests, write code, make failing tests pass
+- **Call B (Quality gates):** Run all 4 quality gate commands, fix any failures
+
+**QA phase — 2 code-reviewer calls:**
+- **Call A (Code review):** Read changed files, produce severity-classified findings
+- **Call B (Gates + verify + commit):** Run quality gates, present manual verification, commit and push
+- **After Call B returns:** Display its return message to the user and **STOP**. The message contains the `/clear` + `/continue` instruction. Do not launch the next agent.
 
 ## User Approval Policy (CRITICAL)
 
@@ -105,11 +100,11 @@ For each epic:
 ```
 - STORIES: Define stories and acceptance criteria for the current epic only
 
-**Stage 3: Per-story iteration (REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY)**
+**Stage 3: Per-story iteration (REALIGN → WRITE-TESTS → IMPLEMENT → QA)**
 ```
 For each story in the epic:
-  feature-planner → test-generator → developer → code-reviewer → quality-gate-checker → commit & push
-      REALIGN          SPECIFY        IMPLEMENT      REVIEW           VERIFY
+  feature-planner → test-generator → developer → code-reviewer → commit & push
+      REALIGN         WRITE-TESTS     IMPLEMENT      QA
 ```
 
 **REALIGN:** Reviews any discovered impacts from previous stories and revises the upcoming story. Auto-completes if no impacts exist.
@@ -119,7 +114,7 @@ This ensures:
 - ✅ Stories defined per-epic (not all upfront) for flexibility
 - ✅ Tests written immediately before each story (true TDD)
 - ✅ Quality gates always pass (no skipped tests)
-- ✅ One commit per story after VERIFY passes
+- ✅ One commit per story after QA passes
 - ✅ Early feedback through per-story review
 - ✅ Faster pivots - discover issues per-story, not per-epic
 - ✅ Implementation learnings feed back into future story planning via REALIGN
@@ -146,6 +141,20 @@ If the feature involves UI screens, ask the user:
 
 - **If yes to wireframes:** Use the **ui-ux-designer** agent first, then continue to feature-planner
 - **If no wireframes needed:** Use the **feature-planner** agent directly
+
+## Step 0.5: Initialize Progress Display
+
+After initializing workflow state, display the TodoWrite progress list:
+
+```bash
+node .claude/scripts/generate-todo-list.js
+```
+
+Parse the JSON output and call `TodoWrite` with the resulting array. This gives the user an immediate visual of the workflow phases ahead.
+
+**After each agent completes and returns to you**, re-run this script and update TodoWrite to reflect the new state. This keeps the progress display current throughout the workflow.
+
+---
 
 ## Option A: Start with Wireframes (UI Features)
 

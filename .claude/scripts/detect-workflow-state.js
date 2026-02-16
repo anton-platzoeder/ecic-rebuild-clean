@@ -7,7 +7,7 @@
  * Workflow Structure (3 Stages):
  *   Stage 1: DESIGN (once) → SCOPE (define epics only)
  *   Stage 2: Per-Epic: STORIES (define stories for current epic)
- *   Stage 3: Per-Story: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY
+ *   Stage 3: Per-Story: REALIGN → WRITE-TESTS → IMPLEMENT → QA
  */
 
 const fs = require('fs');
@@ -129,14 +129,14 @@ function main() {
     return { checked, unchecked };
   }
 
-  function checkReviewComplete(epicNum) {
-    // Check workflow-state.json for REVIEW status
-    const workflowStatePath = '.claude/context/workflow-state.json';
+  function checkQAComplete(epicNum) {
+    // Check workflow-state.json for QA status
+    const workflowStatePath = 'generated-docs/context/workflow-state.json';
     if (fs.existsSync(workflowStatePath)) {
       try {
         const content = fs.readFileSync(workflowStatePath, 'utf-8');
         const state = JSON.parse(content);
-        if (state.phases?.REVIEW?.status === 'completed') {
+        if (state.phases?.QA?.status === 'completed') {
           return true;
         }
       } catch {
@@ -145,7 +145,7 @@ function main() {
     }
 
     // Check review-findings.json
-    const reviewFindingsPath = '.claude/context/review-findings.json';
+    const reviewFindingsPath = 'generated-docs/context/review-findings.json';
     if (fs.existsSync(reviewFindingsPath)) {
       try {
         const content = fs.readFileSync(reviewFindingsPath, 'utf-8');
@@ -195,7 +195,7 @@ function main() {
             } catch { /* ignore */ }
           }
 
-          const storyPhase = storyHasTests ? 'IMPLEMENT' : 'SPECIFY';
+          const storyPhase = storyHasTests ? 'IMPLEMENT' : 'WRITE-TESTS';
 
           return {
             name: storyName,
@@ -244,7 +244,7 @@ function main() {
         if (!hasUncheckedCriteria) {
           storyPhase = 'COMPLETE';
         } else if (!storyHasTests) {
-          storyPhase = 'SPECIFY';
+          storyPhase = 'WRITE-TESTS';
         } else {
           storyPhase = 'IMPLEMENT';
         }
@@ -363,8 +363,8 @@ function main() {
       }
     }
 
-    // Check review status
-    const reviewComplete = checkReviewComplete(epicNum);
+    // Check QA status
+    const qaComplete = checkQAComplete(epicNum);
 
     // Count acceptance tests
     const acceptance = countAcceptanceTests(epicPath);
@@ -392,7 +392,7 @@ function main() {
         currentStory = incompleteStory;
 
         // Check if REALIGN is needed for this story
-        if (impacts.hasImpactsForEpic && incompleteStory.phase === 'SPECIFY') {
+        if (impacts.hasImpactsForEpic && incompleteStory.phase === 'WRITE-TESTS') {
           phase = 'REALIGN';
           currentStoryPhase = 'REALIGN';
         } else {
@@ -428,7 +428,7 @@ function main() {
       currentStory: currentStory ? currentStory.number : null,
       currentStoryPhase,
       tests: testCount,
-      reviewComplete,
+      qaComplete,
       acceptance,
       discoveredImpacts: impacts.impactCount
     });
@@ -456,14 +456,12 @@ function main() {
       action = 'define_stories';
     } else if (firstIncompletePhase === 'REALIGN') {
       action = 'realign_needed';
-    } else if (firstIncompletePhase === 'SPECIFY') {
+    } else if (firstIncompletePhase === 'WRITE-TESTS') {
       action = 'generate_tests';
     } else if (firstIncompletePhase === 'IMPLEMENT') {
       action = 'implement_story';
-    } else if (firstIncompletePhase === 'REVIEW') {
-      action = 'review_story';
-    } else if (firstIncompletePhase === 'VERIFY') {
-      action = 'verify_story';
+    } else if (firstIncompletePhase === 'QA') {
+      action = 'qa_story';
     } else {
       action = 'proceed';
     }

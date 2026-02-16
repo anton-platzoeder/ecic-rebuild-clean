@@ -13,74 +13,62 @@ There are 5 quality gates that must pass:
 2. **Gate 2 - Security**: No vulnerabilities, no hardcoded secrets
 3. **Gate 3 - Code Quality**: TypeScript compiles, ESLint passes, builds successfully
 4. **Gate 4 - Testing**: Vitest tests written and passing
-5. **Gate 5 - Performance**: Page loads reasonably fast
+5. **Gate 5 - Performance**: Page loads reasonably fast (optional)
 
-## Step 1: Run Automated Checks
+## Step 1: Run Automated Quality Gates
 
-Run these checks **in parallel** for efficiency:
+Run the quality gates script with auto-fix enabled:
 
 ```bash
-# Gate 2 - Security
-npm audit
-
-# Gate 3 - Code Quality
-npx tsc --noEmit
-npm run lint
-npm run build
-
-# Gate 4 - Testing
-npm test
+node .claude/scripts/quality-gates.js --auto-fix
 ```
 
-## Step 2: Manual Verification Prompts
+This script:
+- Runs auto-fixes first (`npm run format`, `npm run lint:fix`, `npm audit fix`)
+- Gate 2: Runs `npm audit` and `security-validator.js`
+- Gate 3: Runs TypeScript, ESLint, and build checks
+- Gate 4: Runs Vitest and `test-quality-validator.js`
+- Gate 5: Runs Lighthouse (if configured, otherwise skipped)
 
-For gates that require manual verification:
+## Step 2: Review Results
+
+The script outputs a summary showing pass/fail for each gate:
+
+```
+═══ Summary ═══
+
+  Gate 2 security: ✓ PASS
+  Gate 3 codeQuality: ✓ PASS
+  Gate 4 testing: ✓ PASS
+  Gate 5 performance: ○ SKIP
+
+═══ ALL GATES PASSED ═══
+```
+
+## Step 3: Manual Verification (Gate 1)
+
+After automated gates pass, ask the user about manual testing:
 
 **Gate 1 - Functional:**
-Ask the user: "Have you manually tested the feature? Does it work as expected?"
-
-**Gate 5 - Performance:**
-Ask the user: "Have you checked performance? (You can test locally if needed)"
-
-## Step 3: Generate Quality Gate Report
-
-Create a formatted report showing results:
-
-```markdown
-# Quality Gate Report
-
-## Gate 1: Functional Completeness
-Manual testing confirmed by developer
-
-## Gate 2: Security Review
-npm audit: 0 vulnerabilities
-No hardcoded secrets detected
-
-## Gate 3: Code Quality
-TypeScript: No errors
-ESLint: Passed
-Build: Successful
-
-## Gate 4: Testing
-Vitest tests: X passed, 0 failed
-
-## Gate 5: Performance
-Will be validated manually or in CI
-
----
-
-**Status**: Ready to Commit
-
-All automated quality gates passed. You can safely commit and push to main!
-```
+Ask: "Have you manually tested the feature? Does it work as expected?"
 
 ## Step 4: Handle Failures
 
 If any gate fails:
-- Clearly show which gate failed and why
-- Provide specific fix suggestions
+- The script shows which gate failed and specific errors
+- Provide fix suggestions based on the errors
 - Offer to help fix the issues
-- Re-run checks after fixes
+- Re-run the script after fixes
+
+### Common Fixes
+
+| Issue | Fix |
+|-------|-----|
+| TypeScript error | Fix type issues in reported files |
+| ESLint error | `npm run lint:fix` or fix manually |
+| Build failure | Check error output, usually type/import issue |
+| Test failure | Debug test, fix code or test |
+| Security vulnerability | `npm audit fix` or update package |
 
 ## Step 5: Next Steps
 
@@ -92,6 +80,6 @@ If all gates pass:
 ## Important Notes
 
 - Be encouraging even if gates fail - failures are learning opportunities
-- Provide actionable fix suggestions, not just error messages
-- If only minor issues (like ESLint warnings), note they're non-blocking
-- Track which gates passed/failed for metrics
+- The script runs auto-fixes first, so many issues are resolved automatically
+- Gate 5 (Performance) is optional and skips if Lighthouse isn't configured
+- For JSON output (agent use), run with `--json` flag

@@ -2,7 +2,7 @@
  * Workflow Client Component
  *
  * Client-side component that fetches and displays batch workflow status.
- * Includes polling for real-time updates.
+ * Includes polling for real-time updates and workflow history timeline.
  */
 'use client';
 
@@ -13,11 +13,14 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { WorkflowProgressBar } from '@/components/workflow/WorkflowProgressBar';
 import { CurrentStagePanel } from '@/components/workflow/CurrentStagePanel';
+import { WorkflowHistoryTimeline } from '@/components/workflow/WorkflowHistoryTimeline';
 import {
   getReportBatch,
   getBatchWorkflowStatus,
+  getBatchAuditTrail,
   type ReportBatch,
   type BatchWorkflowStatus,
+  type BatchAuditEvent,
 } from '@/lib/api/batches';
 import { formatReportDate } from '@/lib/utils/date-formatting';
 import { usePolling } from '@/hooks/usePolling';
@@ -30,21 +33,28 @@ export default function WorkflowClient({ batchId }: WorkflowClientProps) {
   const [batch, setBatch] = useState<ReportBatch | null>(null);
   const [workflowStatus, setWorkflowStatus] =
     useState<BatchWorkflowStatus | null>(null);
+  const [auditEvents, setAuditEvents] = useState<BatchAuditEvent[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const fetchBatchAndStatus = useCallback(async () => {
     try {
-      const [batchData, statusData] = await Promise.all([
+      const [batchData, statusData, auditData] = await Promise.all([
         getReportBatch(batchId),
         getBatchWorkflowStatus(batchId),
+        getBatchAuditTrail(batchId, 1, 20),
       ]);
       setBatch(batchData);
       setWorkflowStatus(statusData);
+      setAuditEvents(auditData.items);
+      setCurrentPage(auditData.meta.page);
+      setTotalPages(auditData.meta.totalPages);
       setError(null);
       setIsLoading(false);
     } catch (err) {
-      // Check if error message contains "not found" to show specific message
       const errorMessage =
         err instanceof Error && err.message.toLowerCase().includes('not found')
           ? err.message
@@ -60,13 +70,17 @@ export default function WorkflowClient({ batchId }: WorkflowClientProps) {
 
     async function loadData() {
       try {
-        const [batchData, statusData] = await Promise.all([
+        const [batchData, statusData, auditData] = await Promise.all([
           getReportBatch(batchId),
           getBatchWorkflowStatus(batchId),
+          getBatchAuditTrail(batchId, 1, 20),
         ]);
         if (!cancelled) {
           setBatch(batchData);
           setWorkflowStatus(statusData);
+          setAuditEvents(auditData.items);
+          setCurrentPage(auditData.meta.page);
+          setTotalPages(auditData.meta.totalPages);
           setError(null);
           setIsLoading(false);
         }
@@ -92,6 +106,23 @@ export default function WorkflowClient({ batchId }: WorkflowClientProps) {
 
   // Poll for updates every 30 seconds
   usePolling(fetchBatchAndStatus, 30000, !isLoading && !error);
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || currentPage >= totalPages) return;
+
+    setIsLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const auditData = await getBatchAuditTrail(batchId, nextPage, 20);
+      setAuditEvents((prev) => [...prev, ...auditData.items]);
+      setCurrentPage(auditData.meta.page);
+      setTotalPages(auditData.meta.totalPages);
+    } catch (err) {
+      console.error('Failed to load more events:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -140,6 +171,14 @@ export default function WorkflowClient({ batchId }: WorkflowClientProps) {
         canConfirm={workflowStatus.canConfirm}
         lastRejection={batch.lastRejection}
         reportDate={batch.reportDate}
+      />
+
+      <WorkflowHistoryTimeline
+        events={auditEvents}
+        totalPages={totalPages}
+        currentPage={currentPage}
+        onLoadMore={handleLoadMore}
+        isLoading={isLoadingMore}
       />
     </div>
   );

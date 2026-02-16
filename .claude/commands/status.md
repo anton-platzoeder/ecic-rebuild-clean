@@ -13,7 +13,11 @@ First, check the authoritative workflow state file:
 node .claude/scripts/transition-phase.js --show
 ```
 
-This returns the state from `.claude/context/workflow-state.json`, which is the **source of truth** for workflow progress.
+This returns the state from `generated-docs/context/workflow-state.json`, which is the **source of truth** for workflow progress.
+
+The state includes:
+- `currentPhase` - The phase the story/epic is at
+- `phaseStatus` - Whether work has started: `"ready"`, `"in_progress"`, or `"complete"`
 
 ## Step 2: Get Supplementary Context
 
@@ -51,7 +55,11 @@ Display:
    - Test count
    - Acceptance tests (checked/total)
 4. **Current position** from `resume` object
-5. **Next steps** based on current phase
+5. **Phase status** - Use the `phaseStatus` field to determine the label:
+   - `"in_progress"` → **"Current Phase: {PHASE}"** (work is actively happening)
+   - `"ready"` → **"Next Phase: {PHASE}"** (transitioned but work not yet started)
+   - `"complete"` → **"Feature Complete"**
+6. **Next steps** based on current phase
 
 Example output:
 
@@ -72,13 +80,23 @@ epic-3-reports        | PENDING  | 0/? defined  | -
 === Current Position ===
 
 Resume: Epic 2 (epic-2-payments), Story 2 (story-2-form)
-Phase: IMPLEMENT
+Current Phase: IMPLEMENT
 Action: Run /continue to resume workflow
 
 === Commands ===
 
 /continue      - Resume workflow from current position
 /quality-check - Run all quality gates
+```
+
+**Alternative: If `phaseStatus` is `"ready"` (work not yet started):**
+
+```
+=== Current Position ===
+
+Resume: Epic 2 (epic-2-payments), Story 2 (story-2-form)
+Next Phase: IMPLEMENT
+Action: Run /continue to start implementation
 ```
 
 ### If All Complete
@@ -105,17 +123,16 @@ If the user needs clarification, explain phases in plain language:
 | DESIGN | Feature | Creating wireframes for UI features (optional) |
 | STORIES | Epic | Defining stories and acceptance criteria for the current epic |
 | REALIGN | Story | Reviewing discovered impacts before the current story (auto-completes if none) |
-| SPECIFY | Story | Generating executable tests for the current story |
+| WRITE-TESTS | Story | Generating executable tests for the current story |
 | IMPLEMENT | Story | Writing code to make the current story's tests pass |
-| REVIEW | Story | Code review for the current story |
-| VERIFY | Story | Running quality gates and committing the current story |
+| QA | Story | Code review, quality gates, and committing the current story |
 | COMPLETE | Story | Story complete, advancing to next story or next epic |
 | PENDING | Story | Story not yet started |
 
 **Workflow (3 stages):**
 1. DESIGN (once) → SCOPE (epics only)
 2. Per-Epic: STORIES (define stories for current epic)
-3. Per-Story: REALIGN → SPECIFY → IMPLEMENT → REVIEW → VERIFY → commit
+3. Per-Story: REALIGN → WRITE-TESTS → IMPLEMENT → QA → commit
 
 ## DO
 

@@ -14,12 +14,17 @@ import { axe } from 'vitest-axe';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import WorkflowClient from '@/app/batches/[id]/workflow/WorkflowClient';
 import * as batchesApi from '@/lib/api/batches';
-import type { ReportBatch, BatchWorkflowStatus } from '@/lib/api/batches';
+import type {
+  ReportBatch,
+  BatchWorkflowStatus,
+  BatchAuditTrail,
+} from '@/lib/api/batches';
 
 // Mock batches API
 vi.mock('@/lib/api/batches', () => ({
   getReportBatch: vi.fn(),
   getBatchWorkflowStatus: vi.fn(),
+  getBatchAuditTrail: vi.fn(),
 }));
 
 // Mock polling hook
@@ -86,9 +91,26 @@ const createMockWorkflowStatus = (
   ...overrides,
 });
 
+const createMockAuditTrail = (
+  overrides: Partial<BatchAuditTrail> = {},
+): BatchAuditTrail => ({
+  items: [],
+  meta: {
+    page: 1,
+    pageSize: 20,
+    totalItems: 0,
+    totalPages: 0,
+  },
+  ...overrides,
+});
+
 describe('Workflow State Visualization', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set up default mocks for all tests
+    (
+      batchesApi.getBatchAuditTrail as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(createMockAuditTrail());
   });
 
   describe('Happy Path - Current Stage Display', () => {
