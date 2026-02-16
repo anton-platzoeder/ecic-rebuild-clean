@@ -86,7 +86,18 @@ const ROLES = [
     name: 'Administrator',
     description: 'User management, configuration, audit access',
     isSystemRole: true,
-    allowedPages: ['/admin/users', '/admin/roles', '/admin/audit-trail'],
+    allowedPages: [
+      '/admin/users',
+      '/admin/roles',
+      '/admin/audit-trail',
+      '/batches',
+      '/files',
+      '/validation',
+      '/master-data',
+      '/approvals/level-1',
+      '/approvals/level-2',
+      '/approvals/level-3',
+    ],
   },
   {
     id: 2,
@@ -639,6 +650,67 @@ export async function GET(request: NextRequest) {
     ]);
   }
 
+  // GET /report-batches/:id/validation
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'validation' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+    const isComplete = batch.validationSummary.errors === 0;
+    return json({
+      isComplete,
+      fileCompleteness: {
+        expected: batch.fileSummary.total,
+        received: batch.fileSummary.received,
+        valid: batch.fileSummary.received,
+        failed: 0,
+      },
+      portfolioDataCompleteness: [
+        {
+          portfolioId: 1,
+          portfolioName: 'Global Bond Fund',
+          holdings: true,
+          transactions: true,
+          income: true,
+          cash: true,
+          performance: true,
+        },
+      ],
+      referenceDataCompleteness: {
+        instrumentsMissingRatings: batch.status === 'DataPreparation' ? 3 : 0,
+        instrumentsMissingDurations: 0,
+        instrumentsMissingBetas: 0,
+        missingIndexPrices: 0,
+      },
+    });
+  }
+
+  // GET /report-batches/:id/status
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'status' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+    const isApproved = batch.status === 'Approved';
+    return json({
+      batchId: batch.id,
+      currentStage: batch.status,
+      isLocked: isApproved,
+      canConfirm: batch.status === 'DataPreparation',
+      canApprove: batch.status === 'PendingApproval',
+      pendingApprovalLevel: batch.status === 'PendingApproval' ? 1 : null,
+      lastUpdated: batch.createdAt,
+    });
+  }
+
   // GET /report-batches/:id
   if (
     seg[0] === 'report-batches' &&
@@ -998,6 +1070,20 @@ export async function POST(request: NextRequest) {
     seg[2] === 'backup'
   ) {
     return new NextResponse(null, { status: 204 });
+  }
+
+  // POST /report-batches/:id/confirm
+  if (
+    seg[0] === 'report-batches' &&
+    seg.length === 3 &&
+    seg[2] === 'confirm' &&
+    !isNaN(Number(seg[1]))
+  ) {
+    const batchId = Number(seg[1]);
+    const batch = MOCK_REPORT_BATCHES.find((b) => b.id === batchId);
+    if (!batch) return json({ message: 'Batch not found' }, 404);
+    batch.status = 'Level1Pending';
+    return json(batch);
   }
 
   // POST /report-batches

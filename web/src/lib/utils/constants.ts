@@ -8,10 +8,10 @@
 /**
  * API base URL - Retrieved from environment variable
  * Set NEXT_PUBLIC_API_BASE_URL in your .env.local file
- * Default: http://localhost:8042 (adjust as needed)
+ * Default: http://localhost:3000/api/v1 (adjust as needed)
  */
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8042';
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 /**
  * Default pagination settings
