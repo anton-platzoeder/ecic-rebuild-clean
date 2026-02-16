@@ -7,7 +7,7 @@
 | Epic | Title | Stories | Completed | Status |
 |------|-------|---------|-----------|--------|
 | 1 | Authentication, Authorization & User Management | 8 | 8 | Done |
-| 2 | Batch Management & Workflow State Control | 8 | 4 | In Progress |
+| 2 | Batch Management & Workflow State Control | 8 | 6 | In Progress |
 | 3 | Master Data Management & Reference Data | TBD | 0 | Not Started |
 | 4 | File Processing & Data Acquisition | TBD | 0 | Not Started |
 | 5 | Portfolio Analytics & Risk Metrics | TBD | 0 | Not Started |
@@ -42,7 +42,7 @@ All 8 stories implemented. Auth infrastructure, RBAC, user management, and audit
 ## Epic 2: Batch Management & Workflow State Control
 
 **Status: In Progress**
-4 of 8 stories implemented. Batch lifecycle and workflow visualization are working. State-based access control and remaining stories are pending.
+6 of 8 stories implemented. Batch lifecycle, workflow visualization, workflow history, and batch status summary are working. State-based access control and dashboard enhancements are pending.
 
 - [x] Story 1 - Batch Creation & Listing
   - Route: `/batches` | Commit: `ff46b21`
@@ -54,12 +54,16 @@ All 8 stories implemented. Auth infrastructure, RBAC, user management, and audit
   - Component: `ConfirmDataButton` | Commit: `c498c6a`
 - [ ] Story 5 - State-Based Access Control
   - Status: Realign phase (impact analysis done, commit `cf1eb58`)
-- [ ] Story 6 - Workflow History & Audit Trail
-  - Story spec ready, not yet implemented
+- [x] Story 6 - Workflow History & Audit Trail
+  - Route: `/batches/[id]/workflow` (history section) | Commit: `af8c57d`
+  - Components: `WorkflowHistoryTimeline`, `WorkflowEvent`
+  - API: `/report-batches/{id}/approvals`, `/report-batches/{id}/audit`
 - [ ] Story 7 - Dashboard Pending Actions
   - Story spec ready, not yet implemented
-- [ ] Story 8 - Batch Status Summary
-  - Story spec ready, not yet implemented
+- [x] Story 8 - Batch Status Summary
+  - Route: `/batches/[id]` | Commit: `af8c57d`
+  - Components: `BatchDetailClient`, `BatchHeader`, `OverallStatusBanner`, `FileStatusSection`, `ValidationSummarySection`, `CalculationStatusSection`, `WorkflowInfoSection`, `KeyMetricsPanel`
+  - API: `/report-batches/{id}/files`, `/report-batches/{id}/calculations`
 
 ---
 

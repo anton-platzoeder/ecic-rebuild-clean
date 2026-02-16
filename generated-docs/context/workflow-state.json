@@ -2,8 +2,8 @@
   "featureName": "brd_v2",
   "specPath": "documentation\\brd_v2.md",
   "currentEpic": 1,
-  "currentStory": 1,
-  "currentPhase": "QA",
+  "currentStory": 2,
+  "currentPhase": "REALIGN",
   "epics": {
     "1": {
       "name": "epic-1-authentication-authorization-user-management",
@@ -12,7 +12,7 @@
       "stories": {
         "1": {
           "name": "story-1-user-authentication-ad-ldap",
-          "phase": "QA"
+          "phase": "COMPLETE"
         },
         "2": {
           "name": "story-2-role-based-dashboard-landing",
@@ -61,7 +61,7 @@
   },
   "repairedAt": "2026-02-16T15:07:31.950Z",
   "repairNote": "State reconstructed from artifacts.",
-  "lastUpdated": "2026-02-16T15:11:01.141Z",
+  "lastUpdated": "2026-02-16T16:42:15.169Z",
   "phaseStatus": "in_progress",
   "history": [
     {
@@ -70,6 +70,13 @@
       "story": 1,
       "from": "IMPLEMENT",
       "to": "QA"
+    },
+    {
+      "timestamp": "2026-02-16T16:05:51.127Z",
+      "epic": 1,
+      "story": 1,
+      "from": "QA",
+      "to": "COMPLETE"
     }
   ]
 }

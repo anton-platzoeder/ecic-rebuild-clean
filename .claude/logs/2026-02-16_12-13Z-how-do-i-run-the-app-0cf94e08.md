@@ -3735,3 +3735,27 @@ That task already completed â€” it was the commit which succeeded, and the 
 
 ---
 
+
+---
+
+## Session Summary
+
+**Ended:** 2026-02-16 16:44Z
+**Total Prompts:** 38
+**Tools Used:** Task, Bash, Glob, Read, Grep, Edit, Write, TodoWrite, TaskOutput
+**Files Modified:** 8
+
+### Token Usage
+
+_Token usage data not available. Run `/context` during session to capture token usage._
+
+### Modified Files
+- .\web\.env.local
+- .\web\.env.example
+- .\web\src\lib\utils\constants.ts
+- .\web\next.config.ts
+- .\web\src\app\api\v1\[...path]\route.ts
+- .\documentation\DEMO-SCRIPT.md
+- .\demo\run-demo.mjs
+- .\web\run-demo.mjs
+
