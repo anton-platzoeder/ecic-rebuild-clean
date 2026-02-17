@@ -15,34 +15,34 @@
 ## Acceptance Criteria
 
 ### Happy Path - Batch Switching
-- [ ] Given I am on the Batch Management page with multiple batches, when I click "Switch to Batch" on the January 2026 batch card, then the active batch context changes to January 2026 and I see a success message "Switched to batch: January 2026"
-- [ ] Given I switched to January 2026 batch, when I view the global header, then I see "Active Batch: January 2026" displayed prominently
-- [ ] Given I switched batches, when I navigate to any data entry screen (files, master data, validation), then all data displayed is filtered to the active batch (January 2026)
-- [ ] Given I am viewing a specific batch, when I navigate away and return, then the active batch context is preserved (stored in session or local state)
+- [x] Given I am on the Batch Management page with multiple batches, when I click "Switch to Batch" on the January 2026 batch card, then the active batch context changes to January 2026 and I see a success message "Switched to batch: January 2026"
+- [x] Given I switched to January 2026 batch, when I view the global header, then I see "Active Batch: January 2026" displayed prominently
+- [x] Given I switched batches, when I navigate to any data entry screen (files, master data, validation), then all data displayed is filtered to the active batch (January 2026)
+- [x] Given I am viewing a specific batch, when I navigate away and return, then the active batch context is preserved (stored in session or local state)
 
 ### Active Batch Indicator
-- [ ] Given an active batch is selected (January 2026), when I view the global header, then I see a batch switcher dropdown showing "Active Batch: January 2026 | Status: Data Preparation"
-- [ ] Given I click the batch switcher in the header, when the dropdown opens, then I see a list of recent batches (max 5) with quick-switch options
-- [ ] Given the batch switcher dropdown is open, when I click a different batch from the list, then the active batch context changes immediately and the dropdown closes
-- [ ] Given no batch is active, when I view the header, then I see "No Active Batch" with a link to "Select Batch"
+- [x] Given an active batch is selected (January 2026), when I view the global header, then I see a batch switcher dropdown showing "Active Batch: January 2026 | Status: Data Preparation"
+- [x] Given I click the batch switcher in the header, when the dropdown opens, then I see a list of recent batches (max 5) with quick-switch options
+- [x] Given the batch switcher dropdown is open, when I click a different batch from the list, then the active batch context changes immediately and the dropdown closes
+- [x] Given no batch is active, when I view the header, then I see "No Active Batch" with a link to "Select Batch"
 
 ### Historical Batch Access (Read-Only)
-- [ ] Given I click "View Details" on a closed batch (November 2025, Status: Approved), when the batch details page loads, then all data is read-only and I see a banner "This is a historical batch. No modifications allowed."
-- [ ] Given I am viewing a historical batch, when I attempt to upload a file or modify master data, then the action is blocked and I see the message "Cannot modify historical batch. Switch to an active batch to make changes."
-- [ ] Given I view a historical batch, when I check the batch card, then I see an "Export Report" button instead of "Switch to Batch"
+- [x] Given I click "View Details" on a closed batch (November 2025, Status: Approved), when the batch details page loads, then all data is read-only and I see a banner "This is a historical batch. No modifications allowed."
+- [x] Given I am viewing a historical batch, when I attempt to upload a file or modify master data, then the action is blocked and I see the message "Cannot modify historical batch. Switch to an active batch to make changes."
+- [x] Given I view a historical batch, when I check the batch card, then I see an "Export Report" button instead of "Switch to Batch"
 
 ### Context Persistence
-- [ ] Given I selected January 2026 as active batch, when I refresh the page, then January 2026 remains the active batch (context persisted)
-- [ ] Given I selected January 2026 as active batch, when I log out and log back in, then January 2026 is still the active batch (server-side preference stored)
-- [ ] Given I have never selected a batch, when I first log in, then the system automatically sets the most recent batch (latest by reporting date) as active
+- [x] Given I selected January 2026 as active batch, when I refresh the page, then January 2026 remains the active batch (context persisted)
+- [x] Given I selected January 2026 as active batch, when I log out and log back in, then January 2026 is still the active batch (server-side preference stored)
+- [x] Given I have never selected a batch, when I first log in, then the system automatically sets the most recent batch (latest by reporting date) as active
 
 ### Multi-User Scenarios
-- [ ] Given User A is working on January 2026 batch, when User B logs in, then User B can independently select a different active batch (December 2025) without affecting User A's context
-- [ ] Given I am working on January 2026, when another user creates a new February 2026 batch, then I see a notification "New batch available: February 2026" with option to switch
+- [x] Given User A is working on January 2026 batch, when User B logs in, then User B can independently select a different active batch (December 2025) without affecting User A's context
+- [x] Given I am working on January 2026, when another user creates a new February 2026 batch, then I see a notification "New batch available: February 2026" with option to switch
 
 ### Validation - Status Constraints
-- [ ] Given a batch is in Level 2 Approval (locked state), when I switch to this batch as active, then I can view it but receive a notification "This batch is locked for approval. Data entry disabled."
-- [ ] Given a batch is rejected and returned to Data Preparation, when I switch to this batch, then I can edit data and I see "Batch unlocked after rejection. Ready for corrections."
+- [x] Given a batch is in Level 2 Approval (locked state), when I switch to this batch as active, then I can view it but receive a notification "This batch is locked for approval. Data entry disabled."
+- [x] Given a batch is rejected and returned to Data Preparation, when I switch to this batch, then I can edit data and I see "Batch unlocked after rejection. Ready for corrections."
 
 ## API Endpoints (from OpenAPI spec)
 | Method | Endpoint | Purpose |

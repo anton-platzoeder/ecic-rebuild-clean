@@ -15,73 +15,73 @@
 ## Acceptance Criteria
 
 ### Happy Path - View Audit Trail
-- [ ] Given I have the Administrator role, when I navigate to `/admin/audit-trail`, then I see the Audit Trail Viewer screen with a searchable list of all user actions
-- [ ] Given I am on the Audit Trail Viewer, when the page loads, then I see recent activity sorted by timestamp (most recent first) with columns: Timestamp, User, Action, Entity Type, Entity ID, Details
-- [ ] Given I am on the Audit Trail Viewer, when I view an audit record, then I see who performed the action, what they did, when they did it, and what entity was affected
+- [x] Given I have the Administrator role, when I navigate to `/admin/audit-trail`, then I see the Audit Trail Viewer screen with a searchable list of all user actions
+- [x] Given I am on the Audit Trail Viewer, when the page loads, then I see recent activity sorted by timestamp (most recent first) with columns: Timestamp, User, Action, Entity Type, Entity ID, Details
+- [x] Given I am on the Audit Trail Viewer, when I view an audit record, then I see who performed the action, what they did, when they did it, and what entity was affected
 
 ### Filter by Date Range
-- [ ] Given I am on the Audit Trail Viewer, when I select Date Range "2026-01-01" to "2026-01-05" and click "[Apply Filters]", then I see only audit records within that date range
-- [ ] Given I am on the Audit Trail Viewer, when I select a preset "Last 7 days" from the date range dropdown, then the date range is populated and records are filtered automatically
-- [ ] Given I am on the Audit Trail Viewer, when I clear the date range filter, then I see all audit records (no date restriction)
+- [x] Given I am on the Audit Trail Viewer, when I select Date Range "2026-01-01" to "2026-01-05" and click "[Apply Filters]", then I see only audit records within that date range
+- [x] Given I am on the Audit Trail Viewer, when I select a preset "Last 7 days" from the date range dropdown, then the date range is populated and records are filtered automatically
+- [x] Given I am on the Audit Trail Viewer, when I clear the date range filter, then I see all audit records (no date restriction)
 
 ### Filter by User
-- [ ] Given I am on the Audit Trail Viewer, when I select User "John Smith" from the filter dropdown and click "[Apply Filters]", then I see only actions performed by John Smith
-- [ ] Given I am on the Audit Trail Viewer, when I type "jsmith" in the User filter search box, then the dropdown shows matching usernames
+- [x] Given I am on the Audit Trail Viewer, when I select User "John Smith" from the filter dropdown and click "[Apply Filters]", then I see only actions performed by John Smith
+- [x] Given I am on the Audit Trail Viewer, when I type "jsmith" in the User filter search box, then the dropdown shows matching usernames
 
 ### Filter by Entity Type
-- [ ] Given I am on the Audit Trail Viewer, when I select Entity Type "User" from the filter dropdown and click "[Apply Filters]", then I see only audit records related to user management actions
-- [ ] Given I am on the Audit Trail Viewer, when I select Entity Type "Instrument" from the filter dropdown, then I see only audit records for instrument master data changes
-- [ ] Given I am on the Audit Trail Viewer, when I view entity type options, then I see: User, Role, ApprovalAuthority, Batch, Instrument, Portfolio, AssetManager, IndexPrice, Duration, Beta, CreditRating, CustomHolding
+- [x] Given I am on the Audit Trail Viewer, when I select Entity Type "User" from the filter dropdown and click "[Apply Filters]", then I see only audit records related to user management actions
+- [x] Given I am on the Audit Trail Viewer, when I select Entity Type "Instrument" from the filter dropdown, then I see only audit records for instrument master data changes
+- [x] Given I am on the Audit Trail Viewer, when I view entity type options, then I see: User, Role, ApprovalAuthority, Batch, Instrument, Portfolio, AssetManager, IndexPrice, Duration, Beta, CreditRating, CustomHolding
 
 ### Filter by Action
-- [ ] Given I am on the Audit Trail Viewer, when I select Action "user.created" from the filter dropdown, then I see only user creation events
-- [ ] Given I am on the Audit Trail Viewer, when I select Action "role.assigned", then I see only role assignment events
-- [ ] Given I am on the Audit Trail Viewer, when I view action options, then I see all tracked actions including: user.created, user.updated, user.deactivated, role.assigned, role.removed, approvalAuthority.added, etc.
+- [x] Given I am on the Audit Trail Viewer, when I select Action "user.created" from the filter dropdown, then I see only user creation events
+- [x] Given I am on the Audit Trail Viewer, when I select Action "role.assigned", then I see only role assignment events
+- [x] Given I am on the Audit Trail Viewer, when I view action options, then I see all tracked actions including: user.created, user.updated, user.deactivated, role.assigned, role.removed, approvalAuthority.added, etc.
 
 ### View Audit Record Details
-- [ ] Given I am on the Audit Trail Viewer, when I click on an audit record, then I see an expanded view with complete details including before/after values (if applicable)
-- [ ] Given I am viewing a record for "user.updated", when I look at the details, then I see "Email changed from 'old@company.com' to 'new@company.com'" with timestamp and who made the change
-- [ ] Given I am viewing a record for "role.assigned", when I look at the details, then I see which role was assigned, to which user, effective date, and the reason provided
+- [x] Given I am on the Audit Trail Viewer, when I click on an audit record, then I see an expanded view with complete details including before/after values (if applicable)
+- [x] Given I am viewing a record for "user.updated", when I look at the details, then I see "Email changed from 'old@company.com' to 'new@company.com'" with timestamp and who made the change
+- [x] Given I am viewing a record for "role.assigned", when I look at the details, then I see which role was assigned, to which user, effective date, and the reason provided
 
 ### Entity-Specific Audit Trail
-- [ ] Given I am on the Audit Trail Viewer, when I enter Entity ID "42" and Entity Type "Instrument", then I see complete change history for that specific instrument
-- [ ] Given I am viewing entity-specific audit trail, when I look at the results, then I see all changes made to that entity sorted chronologically (oldest to newest)
+- [x] Given I am on the Audit Trail Viewer, when I enter Entity ID "42" and Entity Type "Instrument", then I see complete change history for that specific instrument
+- [x] Given I am viewing entity-specific audit trail, when I look at the results, then I see all changes made to that entity sorted chronologically (oldest to newest)
 
 ### Temporal Table Queries (Per BR-AUD-001)
-- [ ] Given I am viewing audit trail for a User entity, when I look at the details, then I see data from both the UserHistory temporal table (for before/after values) and UserActivityLog table (for action details)
-- [ ] Given I am viewing a master data change, when I look at the audit record, then I see the complete before and after values captured by SQL Server temporal tables
+- [x] Given I am viewing audit trail for a User entity, when I look at the details, then I see data from both the UserHistory temporal table (for before/after values) and UserActivityLog table (for action details)
+- [x] Given I am viewing a master data change, when I look at the audit record, then I see the complete before and after values captured by SQL Server temporal tables
 
 ### User Activity Summary
-- [ ] Given I am on the Audit Trail Viewer, when I filter by User "John Smith", then I see a summary panel showing "Total Actions: 145 | Date Range: 2025-01-15 to 2026-01-05 | Most Common Action: instrument.updated"
-- [ ] Given I am viewing user activity summary, when I click "[View User Profile]", then I am navigated to the User Details screen for that user
+- [x] Given I am on the Audit Trail Viewer, when I filter by User "John Smith", then I see a summary panel showing "Total Actions: 145 | Date Range: 2025-01-15 to 2026-01-05 | Most Common Action: instrument.updated"
+- [x] Given I am viewing user activity summary, when I click "[View User Profile]", then I am navigated to the User Details screen for that user
 
 ### Export Audit Trail
-- [ ] Given I am on the Audit Trail Viewer, when I apply filters and click "[📊 Export Audit Trail]", then an Excel file is downloaded containing all visible audit records matching the filters
-- [ ] Given I export audit trail, when I open the Excel file, then I see columns: Timestamp, Username, Display Name, Action, Entity Type, Entity ID, Details, IP Address
+- [x] Given I am on the Audit Trail Viewer, when I apply filters and click "[📊 Export Audit Trail]", then an Excel file is downloaded containing all visible audit records matching the filters
+- [x] Given I export audit trail, when I open the Excel file, then I see columns: Timestamp, Username, Display Name, Action, Entity Type, Entity ID, Details, IP Address
 
 ### Point-in-Time Queries (Per BR-AUD-001)
-- [ ] Given I am viewing an entity audit trail, when I select "View as of date: 2025-12-01", then I see the entity's state as it existed on that specific date (using temporal table FOR SYSTEM_TIME AS OF query)
+- [x] Given I am viewing an entity audit trail, when I select "View as of date: 2025-12-01", then I see the entity's state as it existed on that specific date (using temporal table FOR SYSTEM_TIME AS OF query)
 
 ### Security Audit Queries
-- [ ] Given I am on the Audit Trail Viewer, when I select preset filter "Failed Login Attempts - Last 7 Days", then I see all failed login attempts from UserLoginLog table
-- [ ] Given I am on the Audit Trail Viewer, when I select preset filter "User Deactivations - Last 30 Days", then I see all user deactivation events with reasons
-- [ ] Given I am on the Audit Trail Viewer, when I select preset filter "Approval Authority Changes", then I see all changes to approval authority configuration
+- [x] Given I am on the Audit Trail Viewer, when I select preset filter "Failed Login Attempts - Last 7 Days", then I see all failed login attempts from UserLoginLog table
+- [x] Given I am on the Audit Trail Viewer, when I select preset filter "User Deactivations - Last 30 Days", then I see all user deactivation events with reasons
+- [x] Given I am on the Audit Trail Viewer, when I select preset filter "Approval Authority Changes", then I see all changes to approval authority configuration
 
 ### Real-Time Updates
-- [ ] Given I am on the Audit Trail Viewer with no date filter, when another user performs an action, then the new audit record appears at the top of the list within 5 seconds
+- [x] Given I am on the Audit Trail Viewer with no date filter, when another user performs an action, then the new audit record appears at the top of the list within 5 seconds
 
 ### Authorization Check
-- [ ] Given I have the Administrator role, when I navigate to `/admin/audit-trail`, then I can view all audit records
-- [ ] Given I have the Analyst role with 'audit.view' permission, when I navigate to `/admin/audit-trail`, then I can view audit records but cannot export
-- [ ] Given I do NOT have 'audit.view' permission, when I attempt to navigate to `/admin/audit-trail`, then I see an error message "Access denied. Audit view permission required."
+- [x] Given I have the Administrator role, when I navigate to `/admin/audit-trail`, then I can view all audit records
+- [x] Given I have the Analyst role with 'audit.view' permission, when I navigate to `/admin/audit-trail`, then I can view audit records but cannot export
+- [x] Given I do NOT have 'audit.view' permission, when I attempt to navigate to `/admin/audit-trail`, then I see an error message "Access denied. Audit view permission required."
 
 ### Audit Trail Completeness (Per BR-AUD-002)
-- [ ] Given I am on the Audit Trail Viewer, when I filter by Entity Type, then I see audit trails for all master data entities: Instruments, IndexPrices, Durations, Betas, CreditRatings, CustomHoldings, and all reference data entities
-- [ ] Given I am on the Audit Trail Viewer, when I filter by Action, then I see create, update, delete, approve, reject actions for all auditable entities
+- [x] Given I am on the Audit Trail Viewer, when I filter by Entity Type, then I see audit trails for all master data entities: Instruments, IndexPrices, Durations, Betas, CreditRatings, CustomHoldings, and all reference data entities
+- [x] Given I am on the Audit Trail Viewer, when I filter by Action, then I see create, update, delete, approve, reject actions for all auditable entities
 
 ### Performance
-- [ ] Given I am on the Audit Trail Viewer, when I query audit records for the last 90 days, then results load within 2 seconds
-- [ ] Given I am on the Audit Trail Viewer with 10,000+ matching records, when I scroll, then pagination loads the next page within 1 second
+- [x] Given I am on the Audit Trail Viewer, when I query audit records for the last 90 days, then results load within 2 seconds
+- [x] Given I am on the Audit Trail Viewer with 10,000+ matching records, when I scroll, then pagination loads the next page within 1 second
 
 ## API Endpoints (from OpenAPI spec)
 | Method | Endpoint | Purpose |

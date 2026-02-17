@@ -15,70 +15,70 @@
 ## Acceptance Criteria
 
 ### Happy Path - View Batch Summary
-- [ ] Given I navigate to `/batches/123` for January 2026 batch, when the page loads, then I see batch header showing "Batch: January 2026", reporting date "2026-01-31", status badge "Level 2 Approval", and created by "John Smith on 2026-01-05"
-- [ ] Given I view the batch summary, when the page loads, then I see four main sections: File Status, Validation Summary, Calculation Status, and Workflow Information
-- [ ] Given a batch has complete data, when I view the summary, then I see overall status indicator "✓ Ready for Review" (green)
+- [x] Given I navigate to `/batches/123` for January 2026 batch, when the page loads, then I see batch header showing "Batch: January 2026", reporting date "2026-01-31", status badge "Level 2 Approval", and created by "John Smith on 2026-01-05"
+- [x] Given I view the batch summary, when the page loads, then I see four main sections: File Status, Validation Summary, Calculation Status, and Workflow Information
+- [x] Given a batch has complete data, when I view the summary, then I see overall status indicator "✓ Ready for Review" (green)
 
 ### File Status Section
-- [ ] Given the batch has 45 files expected and 45 received, when I view the File Status section, then I see "Files: 45/45 received (100%)" with green checkmark
-- [ ] Given the batch has 42 files received out of 45 expected, when I view the File Status section, then I see "Files: 42/45 received (93%)" with yellow warning and "3 files missing" message
-- [ ] Given I view the file status, when I click "[View Details]", then I navigate to the File Status Monitor page for this batch
-- [ ] Given files have processing errors, when I view the File Status section, then I see "3 files failed validation" with red error indicator
+- [x] Given the batch has 45 files expected and 45 received, when I view the File Status section, then I see "Files: 45/45 received (100%)" with green checkmark
+- [x] Given the batch has 42 files received out of 45 expected, when I view the File Status section, then I see "Files: 42/45 received (93%)" with yellow warning and "3 files missing" message
+- [x] Given I view the file status, when I click "[View Details]", then I navigate to the File Status Monitor page for this batch
+- [x] Given files have processing errors, when I view the File Status section, then I see "3 files failed validation" with red error indicator
 
 ### Validation Summary Section
-- [ ] Given the batch has 3 validation warnings, when I view the Validation Summary section, then I see "Validation: 3 warnings" with yellow warning icon
-- [ ] Given the batch has 12 validation errors (missing data), when I view the Validation Summary section, then I see "Validation: 12 errors" with red error icon and expandable list showing error categories
-- [ ] Given I expand the validation errors, when the section expands, then I see breakdown: "5 missing credit ratings", "4 missing durations", "3 missing index prices"
-- [ ] Given I view validation summary, when I click "[View Full Validation Report]", then I navigate to the Data Validation Summary page
-- [ ] Given the batch has no validation issues, when I view the Validation Summary section, then I see "Validation: All checks passed ✓" (green)
+- [x] Given the batch has 3 validation warnings, when I view the Validation Summary section, then I see "Validation: 3 warnings" with yellow warning icon
+- [x] Given the batch has 12 validation errors (missing data), when I view the Validation Summary section, then I see "Validation: 12 errors" with red error icon and expandable list showing error categories
+- [x] Given I expand the validation errors, when the section expands, then I see breakdown: "5 missing credit ratings", "4 missing durations", "3 missing index prices"
+- [x] Given I view validation summary, when I click "[View Full Validation Report]", then I navigate to the Data Validation Summary page
+- [x] Given the batch has no validation issues, when I view the Validation Summary section, then I see "Validation: All checks passed ✓" (green)
 
 ### Calculation Status Section
-- [ ] Given calculations completed successfully, when I view the Calculation Status section, then I see "Calculations: Complete ✓" with timestamp "Completed on 2026-01-06 10:30 (Duration: 2m 34s)"
-- [ ] Given calculations are in progress, when I view the Calculation Status section, then I see "Calculations: Running..." with spinner icon and estimated time remaining
-- [ ] Given calculations failed, when I view the Calculation Status section, then I see "Calculations: Failed (5 errors)" with red error icon
-- [ ] Given I view calculation status, when I click "[View Calculation Details]", then I navigate to the Calculation Status Monitor page
-- [ ] Given calculations were cleared after rejection, when I view the Calculation Status section, then I see "Calculations: Cleared (awaiting rerun)" with info icon
+- [x] Given calculations completed successfully, when I view the Calculation Status section, then I see "Calculations: Complete ✓" with timestamp "Completed on 2026-01-06 10:30 (Duration: 2m 34s)"
+- [x] Given calculations are in progress, when I view the Calculation Status section, then I see "Calculations: Running..." with spinner icon and estimated time remaining
+- [x] Given calculations failed, when I view the Calculation Status section, then I see "Calculations: Failed (5 errors)" with red error icon
+- [x] Given I view calculation status, when I click "[View Calculation Details]", then I navigate to the Calculation Status Monitor page
+- [x] Given calculations were cleared after rejection, when I view the Calculation Status section, then I see "Calculations: Cleared (awaiting rerun)" with info icon
 
 ### Workflow Information Section
-- [ ] Given the batch is in Level 2 Approval, when I view the Workflow Information section, then I see current stage "Level 2 Approval", current approver "Portfolio Manager (Sarah Johnson)", and time in current stage "18 hours"
-- [ ] Given the batch has approval history, when I view the Workflow Information section, then I see "Previous Approvals: Level 1 ✓ (Approved by John Smith on 2026-01-06 11:30)"
-- [ ] Given I view workflow information, when I click "[View Full Workflow History]", then I navigate to the Workflow State Viewer page
-- [ ] Given the batch was rejected, when I view the Workflow Information section, then I see "Last Rejection: Level 1 on 2026-01-07 14:20" with expandable rejection reason
+- [x] Given the batch is in Level 2 Approval, when I view the Workflow Information section, then I see current stage "Level 2 Approval", current approver "Portfolio Manager (Sarah Johnson)", and time in current stage "18 hours"
+- [x] Given the batch has approval history, when I view the Workflow Information section, then I see "Previous Approvals: Level 1 ✓ (Approved by John Smith on 2026-01-06 11:30)"
+- [x] Given I view workflow information, when I click "[View Full Workflow History]", then I navigate to the Workflow State Viewer page
+- [x] Given the batch was rejected, when I view the Workflow Information section, then I see "Last Rejection: Level 1 on 2026-01-07 14:20" with expandable rejection reason
 
 ### Overall Status Indicator
-- [ ] Given all files received, validation passed, and calculations complete, when I view the batch summary, then I see overall status "✓ Data Complete - Ready for Approval" (green banner)
-- [ ] Given files missing or validation errors exist, when I view the batch summary, then I see overall status "⚠ Data Incomplete - 5 issues requiring attention" (yellow banner)
-- [ ] Given calculations failed, when I view the batch summary, then I see overall status "✗ Calculation Errors - Cannot proceed to approval" (red banner)
+- [x] Given all files received, validation passed, and calculations complete, when I view the batch summary, then I see overall status "✓ Data Complete - Ready for Approval" (green banner)
+- [x] Given files missing or validation errors exist, when I view the batch summary, then I see overall status "⚠ Data Incomplete - 5 issues requiring attention" (yellow banner)
+- [x] Given calculations failed, when I view the batch summary, then I see overall status "✗ Calculation Errors - Cannot proceed to approval" (red banner)
 
 ### Data Completeness Progress Bar
-- [ ] Given a batch has 80% file completeness, 90% validation completeness, and 100% calculations complete, when I view the batch summary, then I see a multi-segment progress bar showing each metric
-- [ ] Given I hover over a segment in the progress bar, when the mouse hovers, then I see a tooltip with detailed breakdown (e.g., "Files: 42/45 received, 3 missing")
+- [x] Given a batch has 80% file completeness, 90% validation completeness, and 100% calculations complete, when I view the batch summary, then I see a multi-segment progress bar showing each metric
+- [x] Given I hover over a segment in the progress bar, when the mouse hovers, then I see a tooltip with detailed breakdown (e.g., "Files: 42/45 received, 3 missing")
 
 ### Key Metrics Panel
-- [ ] Given I view the batch summary, when the page loads, then I see a Key Metrics panel showing: Total Portfolios (5), Total Instruments (234), Holdings Count (567), Total Value ($1.2B)
-- [ ] Given the batch is in approval stage, when I view key metrics, then I see "Data Locked Since: 2026-01-06 11:30" with lock icon
+- [x] Given I view the batch summary, when the page loads, then I see a Key Metrics panel showing: Total Portfolios (5), Total Instruments (234), Holdings Count (567), Total Value ($1.2B)
+- [x] Given the batch is in approval stage, when I view key metrics, then I see "Data Locked Since: 2026-01-06 11:30" with lock icon
 
 ### Action Buttons Based on Status and Role
-- [ ] Given I am an Analyst and the batch is in Data Preparation with complete data, when I view the batch summary, then I see "[Confirm Data Ready]" button prominently displayed
-- [ ] Given I am a Level 1 Approver and the batch is in Level1Pending, when I view the batch summary, then I see "[Review & Approve]" button
-- [ ] Given I am an Analyst and the batch is locked, when I view the batch summary, then I do NOT see action buttons (read-only view)
-- [ ] Given the batch is historical (Approved), when I view the batch summary, then I see "[Export Report]" and "[View Audit Log]" buttons only
+- [x] Given I am an Analyst and the batch is in Data Preparation with complete data, when I view the batch summary, then I see "[Confirm Data Ready]" button prominently displayed
+- [x] Given I am a Level 1 Approver and the batch is in Level1Pending, when I view the batch summary, then I see "[Review & Approve]" button
+- [x] Given I am an Analyst and the batch is locked, when I view the batch summary, then I do NOT see action buttons (read-only view)
+- [x] Given the batch is historical (Approved), when I view the batch summary, then I see "[Export Report]" and "[View Audit Log]" buttons only
 
 ### Rejection Information
-- [ ] Given a batch was rejected, when I view the batch summary, then I see a prominent "Rejection Information" panel with rejecting user, timestamp, rejection level, and full rejection reason
-- [ ] Given a batch was rejected multiple times, when I view the rejection information, then I see a history of all rejections with "[View All Rejections]" link
+- [x] Given a batch was rejected, when I view the batch summary, then I see a prominent "Rejection Information" panel with rejecting user, timestamp, rejection level, and full rejection reason
+- [x] Given a batch was rejected multiple times, when I view the rejection information, then I see a history of all rejections with "[View All Rejections]" link
 
 ### Real-Time Updates
-- [ ] Given I am viewing the batch summary, when the batch status changes (e.g., file uploaded), then the relevant section updates within 30 seconds without requiring page refresh
-- [ ] Given calculations complete while I am viewing the page, when the status changes, then I see a notification "Calculations completed successfully" and the Calculation Status section updates
+- [x] Given I am viewing the batch summary, when the batch status changes (e.g., file uploaded), then the relevant section updates within 30 seconds without requiring page refresh
+- [x] Given calculations complete while I am viewing the page, when the status changes, then I see a notification "Calculations completed successfully" and the Calculation Status section updates
 
 ### Navigation Shortcuts
-- [ ] Given I view the batch summary, when I see a specific issue (e.g., "5 missing credit ratings"), then the issue text is a clickable link that navigates to the Credit Ratings management page with filters applied
-- [ ] Given I view the file status "3 files missing", when I click the text, then I navigate to the File Status Monitor page filtered to show only missing files
+- [x] Given I view the batch summary, when I see a specific issue (e.g., "5 missing credit ratings"), then the issue text is a clickable link that navigates to the Credit Ratings management page with filters applied
+- [x] Given I view the file status "3 files missing", when I click the text, then I navigate to the File Status Monitor page filtered to show only missing files
 
 ### Export Functionality
-- [ ] Given I view the batch summary, when I click "[Export Summary Report]", then a PDF downloads with all summary information formatted for printing/sharing
-- [ ] Given the batch is approved, when I click "[Export Data]", then an Excel file downloads with all batch data
+- [x] Given I view the batch summary, when I click "[Export Summary Report]", then a PDF downloads with all summary information formatted for printing/sharing
+- [x] Given the batch is approved, when I click "[Export Data]", then an Excel file downloads with all batch data
 
 ## API Endpoints (from OpenAPI spec)
 | Method | Endpoint | Purpose |
