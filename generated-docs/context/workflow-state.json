@@ -1,13 +1,13 @@
 {
   "featureName": "brd_v2",
   "specPath": "documentation\\brd_v2.md",
-  "currentEpic": 1,
-  "currentStory": 4,
+  "currentEpic": 2,
+  "currentStory": 5,
   "currentPhase": "QA",
   "epics": {
     "1": {
       "name": "epic-1-authentication-authorization-user-management",
-      "phase": "IMPLEMENT",
+      "phase": "COMPLETE",
       "totalStories": 9,
       "stories": {
         "1": {
@@ -24,7 +24,7 @@
         },
         "4": {
           "name": "story-4-role-assignment-permission-management",
-          "phase": "QA"
+          "phase": "COMPLETE"
         },
         "5": {
           "name": "story-5-approval-authority-configuration",
@@ -76,7 +76,7 @@
         },
         "5": {
           "name": "story-5-state-based-access-control",
-          "phase": "PENDING"
+          "phase": "QA"
         },
         "6": {
           "name": "story-6-workflow-history-audit-trail",
@@ -93,69 +93,45 @@
       },
       "tests": 8,
       "phaseConfidence": "high"
+    },
+    "3": {
+      "name": "epic-3-master-data-management-reference-data",
+      "phase": "STORIES",
+      "stories": {
+        "1": {
+          "name": "story-1-instrument-listing-search",
+          "phase": "QA"
+        },
+        "2": {
+          "name": "story-2-instrument-create-view-edit",
+          "phase": "PENDING"
+        },
+        "3": {
+          "name": "story-3-reference-data-category-landing",
+          "phase": "PENDING"
+        },
+        "4": {
+          "name": "story-4-portfolio-asset-manager-management",
+          "phase": "PENDING"
+        },
+        "5": {
+          "name": "story-5-geographic-financial-reference-data",
+          "phase": "PENDING"
+        },
+        "6": {
+          "name": "story-6-master-data-audit-trail",
+          "phase": "PENDING"
+        }
+      },
+      "totalStories": 6,
+      "phaseConfidence": "high"
     }
   },
   "repairedAt": "2026-02-16T15:07:31.950Z",
   "repairNote": "State reconstructed from artifacts.",
-  "lastUpdated": "2026-02-17T06:04:16.974Z",
+  "lastUpdated": "2026-02-17T06:43:10.443Z",
   "phaseStatus": "in_progress",
   "history": [
-    {
-      "timestamp": "2026-02-16T15:10:24.123Z",
-      "epic": 1,
-      "story": 1,
-      "from": "IMPLEMENT",
-      "to": "QA"
-    },
-    {
-      "timestamp": "2026-02-16T16:05:51.127Z",
-      "epic": 1,
-      "story": 1,
-      "from": "QA",
-      "to": "COMPLETE"
-    },
-    {
-      "timestamp": "2026-02-16T16:47:58.178Z",
-      "epic": 1,
-      "story": 2,
-      "from": "WRITE-TESTS",
-      "to": "WRITE-TESTS"
-    },
-    {
-      "timestamp": "2026-02-16T16:51:23.079Z",
-      "epic": 1,
-      "story": 2,
-      "from": "WRITE-TESTS",
-      "to": "IMPLEMENT"
-    },
-    {
-      "timestamp": "2026-02-16T16:56:20.813Z",
-      "epic": 1,
-      "story": 2,
-      "from": "IMPLEMENT",
-      "to": "QA"
-    },
-    {
-      "timestamp": "2026-02-16T17:03:07.504Z",
-      "epic": 1,
-      "story": 2,
-      "from": "QA",
-      "to": "COMPLETE"
-    },
-    {
-      "timestamp": "2026-02-16T17:33:11.705Z",
-      "epic": 1,
-      "story": 3,
-      "from": "WRITE-TESTS",
-      "to": "WRITE-TESTS"
-    },
-    {
-      "timestamp": "2026-02-16T17:37:54.259Z",
-      "epic": 1,
-      "story": 3,
-      "from": "WRITE-TESTS",
-      "to": "IMPLEMENT"
-    },
     {
       "timestamp": "2026-02-16T17:41:01.761Z",
       "epic": 1,
@@ -288,6 +264,84 @@
       "story": 4,
       "from": "IMPLEMENT",
       "to": "QA"
+    },
+    {
+      "timestamp": "2026-02-17T06:09:38.240Z",
+      "epic": 1,
+      "story": 4,
+      "from": "QA",
+      "to": "COMPLETE"
+    },
+    {
+      "timestamp": "2026-02-17T06:11:58.458Z",
+      "epic": 2,
+      "story": 5,
+      "from": "PENDING",
+      "to": "REALIGN"
+    },
+    {
+      "timestamp": "2026-02-17T06:12:11.009Z",
+      "epic": 2,
+      "story": 5,
+      "from": "REALIGN",
+      "to": "WRITE-TESTS"
+    },
+    {
+      "timestamp": "2026-02-17T06:12:13.400Z",
+      "epic": 2,
+      "story": 5,
+      "from": "WRITE-TESTS",
+      "to": "REALIGN"
+    },
+    {
+      "timestamp": "2026-02-17T06:12:17.724Z",
+      "epic": 2,
+      "story": 5,
+      "from": "REALIGN",
+      "to": "WRITE-TESTS"
+    },
+    {
+      "timestamp": "2026-02-17T06:20:00.955Z",
+      "epic": 2,
+      "story": 5,
+      "from": "WRITE-TESTS",
+      "to": "IMPLEMENT"
+    },
+    {
+      "timestamp": "2026-02-17T06:25:56.609Z",
+      "epic": 3,
+      "story": 1,
+      "from": "PENDING",
+      "to": "REALIGN"
+    },
+    {
+      "timestamp": "2026-02-17T06:25:56.746Z",
+      "epic": 3,
+      "story": 1,
+      "from": "REALIGN",
+      "to": "WRITE-TESTS"
+    },
+    {
+      "timestamp": "2026-02-17T06:25:56.897Z",
+      "epic": 3,
+      "story": 1,
+      "from": "WRITE-TESTS",
+      "to": "IMPLEMENT"
+    },
+    {
+      "timestamp": "2026-02-17T06:41:49.861Z",
+      "epic": 3,
+      "story": 1,
+      "from": "IMPLEMENT",
+      "to": "QA"
+    },
+    {
+      "timestamp": "2026-02-17T06:42:46.339Z",
+      "epic": 2,
+      "story": 5,
+      "from": "IMPLEMENT",
+      "to": "QA"
     }
-  ]
+  ],
+  "totalEpics": 4
 }

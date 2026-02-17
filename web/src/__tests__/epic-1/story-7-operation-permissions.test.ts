@@ -69,7 +69,7 @@ describe('Operation-Level Permission Checks', () => {
         type: 'Bond',
       });
 
-      const result = await updateInstrument('inst-456', {
+      const result = await updateInstrument(456, {
         name: 'Updated Bond',
       });
 
@@ -79,7 +79,7 @@ describe('Operation-Level Permission Checks', () => {
         type: 'Bond',
       });
       expect(mockPut).toHaveBeenCalledWith(
-        '/v1/instruments/inst-456',
+        '/v1/instruments/456',
         expect.any(Object),
       );
     });
@@ -92,7 +92,7 @@ describe('Operation-Level Permission Checks', () => {
       });
 
       await expect(
-        updateInstrument('inst-456', {
+        updateInstrument(456, {
           name: 'Updated Bond',
         }),
       ).rejects.toMatchObject({
@@ -121,7 +121,7 @@ describe('Operation-Level Permission Checks', () => {
       });
 
       await expect(
-        updateInstrument('inst-123', { name: 'New Name' }),
+        updateInstrument(123, { name: 'New Name' }),
       ).rejects.toMatchObject({
         statusCode: 403,
       });

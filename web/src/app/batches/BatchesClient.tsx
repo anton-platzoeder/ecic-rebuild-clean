@@ -10,6 +10,12 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { WorkflowProgress } from '@/components/dashboard/WorkflowProgress';
 import { getCurrentUser, AuthUser } from '@/lib/api/auth';
 import {
@@ -18,7 +24,11 @@ import {
   ReportBatch,
   PaginationMeta,
 } from '@/lib/api/batches';
-import { AlertCircle } from 'lucide-react';
+import {
+  isBatchLocked,
+  getLockMessage,
+} from '@/lib/permissions/batch-access-control';
+import { AlertCircle, Lock, Unlock } from 'lucide-react';
 import Link from 'next/link';
 
 type FilterOption = 'All' | 'Active' | 'Closed';
@@ -93,6 +103,8 @@ interface BatchCardProps {
 function BatchCard({ batch }: BatchCardProps) {
   const hasRejection = batch.lastRejection !== null;
   const statusText = formatStatusText(batch.status, hasRejection);
+  const isLocked = isBatchLocked(batch.status);
+  const lockMessage = getLockMessage(batch.status);
 
   return (
     <article>
@@ -108,9 +120,26 @@ function BatchCard({ batch }: BatchCardProps) {
                   Created by {batch.createdBy}
                 </p>
               </div>
-              <Badge className={getStatusBadgeColor(batch.status)}>
-                {statusText}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className={getStatusBadgeColor(batch.status)}>
+                  {statusText}
+                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="inline-flex"
+                      aria-label={isLocked ? 'Locked' : 'Unlocked'}
+                    >
+                      {isLocked ? (
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Unlock className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{lockMessage}</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -269,96 +298,98 @@ export default function BatchesClient() {
   const buttonDisabled = isCreateButtonDisabled();
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Batch Management</h1>
-          {canCreateBatch && (
-            <div
-              className="relative inline-block"
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-            >
-              <Button
-                onClick={handleCreateBatch}
-                disabled={buttonDisabled || isCreating}
+    <TooltipProvider>
+      <main className="container mx-auto px-4 py-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Batch Management</h1>
+            {canCreateBatch && (
+              <div
+                className="relative inline-block"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
               >
-                Create New Batch
+                <Button
+                  onClick={handleCreateBatch}
+                  disabled={buttonDisabled || isCreating}
+                >
+                  Create New Batch
+                </Button>
+                {buttonDisabled && showTooltip && (
+                  <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-sm text-white bg-gray-900 rounded-md whitespace-nowrap">
+                    All existing batches must be Approved before creating a new
+                    one
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              className="rounded-md bg-destructive/10 p-4 text-destructive"
+            >
+              {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="rounded-md bg-green-50 p-4 text-green-800">
+              {successMessage}
+            </div>
+          )}
+
+          <div className="flex items-center gap-4">
+            <div>
+              <label htmlFor="filter-select" className="sr-only">
+                Filter
+              </label>
+              <select
+                id="filter-select"
+                aria-label="filter"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as FilterOption)}
+                className="rounded-md border border-input bg-background px-3 py-2"
+              >
+                <option value="All">All</option>
+                <option value="Active">Active</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="sort-select" className="sr-only">
+                Sort
+              </label>
+              <select
+                id="sort-select"
+                aria-label="sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOption)}
+                className="rounded-md border border-input bg-background px-3 py-2"
+              >
+                <option value="Latest First">Latest First</option>
+                <option value="Oldest First">Oldest First</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {displayedBatches.map((batch) => (
+              <BatchCard key={batch.id} batch={batch} />
+            ))}
+          </div>
+
+          {showLoadMore && (
+            <div className="flex justify-center pt-4">
+              <Button onClick={handleLoadMore} variant="outline">
+                Load More
               </Button>
-              {buttonDisabled && showTooltip && (
-                <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-sm text-white bg-gray-900 rounded-md whitespace-nowrap">
-                  All existing batches must be Approved before creating a new
-                  one
-                </div>
-              )}
             </div>
           )}
         </div>
-
-        {error && (
-          <div
-            role="alert"
-            className="rounded-md bg-destructive/10 p-4 text-destructive"
-          >
-            {error}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="rounded-md bg-green-50 p-4 text-green-800">
-            {successMessage}
-          </div>
-        )}
-
-        <div className="flex items-center gap-4">
-          <div>
-            <label htmlFor="filter-select" className="sr-only">
-              Filter
-            </label>
-            <select
-              id="filter-select"
-              aria-label="filter"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as FilterOption)}
-              className="rounded-md border border-input bg-background px-3 py-2"
-            >
-              <option value="All">All</option>
-              <option value="Active">Active</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="sort-select" className="sr-only">
-              Sort
-            </label>
-            <select
-              id="sort-select"
-              aria-label="sort"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="rounded-md border border-input bg-background px-3 py-2"
-            >
-              <option value="Latest First">Latest First</option>
-              <option value="Oldest First">Oldest First</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="grid gap-4">
-          {displayedBatches.map((batch) => (
-            <BatchCard key={batch.id} batch={batch} />
-          ))}
-        </div>
-
-        {showLoadMore && (
-          <div className="flex justify-center pt-4">
-            <Button onClick={handleLoadMore} variant="outline">
-              Load More
-            </Button>
-          </div>
-        )}
-      </div>
-    </main>
+      </main>
+    </TooltipProvider>
   );
 }

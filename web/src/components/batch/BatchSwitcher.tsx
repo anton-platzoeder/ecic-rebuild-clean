@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2, Lock } from 'lucide-react';
 import { useBatch } from '@/contexts/BatchContext';
 import { listReportBatches, type ReportBatch } from '@/lib/api/batches';
 import { formatReportDate } from '@/lib/utils/date-formatting';
@@ -21,6 +21,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 /**
  * Map status codes to display names
@@ -109,63 +115,75 @@ export function BatchSwitcher() {
   }
 
   return (
-    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 px-3 h-9"
-          aria-haspopup="menu"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Active Batch:</span>
-            <span className="text-sm">
-              {formatReportDate(currentBatch.reportDate)}
-            </span>
-            <Badge variant={getStatusBadgeVariant(currentBatch.status)}>
-              {getStatusDisplayName(currentBatch.status)}
-            </Badge>
-            {isReadOnly && (
-              <Badge variant="destructive" className="text-xs">
-                read-only
-              </Badge>
-            )}
-          </div>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64" role="menu">
-        {recentBatches.map((batch) => (
-          <DropdownMenuItem
-            key={batch.id}
-            onClick={() => handleBatchSwitch(batch.id)}
-            className="flex items-center justify-between cursor-pointer"
-            role="menuitem"
+    <TooltipProvider>
+      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 px-3 h-9"
+            aria-haspopup="menu"
           >
-            <div className="flex flex-col gap-1">
-              <span className="font-medium">
-                {formatReportDate(batch.reportDate)}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Active Batch:</span>
+              <span className="text-sm">
+                {formatReportDate(currentBatch.reportDate)}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {getStatusDisplayName(batch.status)}
-              </span>
-            </div>
-            {batch.id === currentBatch.id && (
-              <Badge variant="outline" className="text-xs">
-                Current
+              <Badge variant={getStatusBadgeVariant(currentBatch.status)}>
+                {getStatusDisplayName(currentBatch.status)}
               </Badge>
-            )}
-          </DropdownMenuItem>
-        ))}
-        <Link
-          href="/batches"
-          role="link"
-          className="flex items-center justify-center w-full text-sm font-medium text-primary cursor-pointer"
-        >
-          <DropdownMenuItem role="menuitem" className="w-full justify-center">
-            View All Batches
-          </DropdownMenuItem>
-        </Link>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              {isReadOnly && (
+                <>
+                  <Badge variant="destructive" className="text-xs">
+                    read-only
+                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex" aria-label="Locked">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Data locked for approval</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64" role="menu">
+          {recentBatches.map((batch) => (
+            <DropdownMenuItem
+              key={batch.id}
+              onClick={() => handleBatchSwitch(batch.id)}
+              className="flex items-center justify-between cursor-pointer"
+              role="menuitem"
+            >
+              <div className="flex flex-col gap-1">
+                <span className="font-medium">
+                  {formatReportDate(batch.reportDate)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {getStatusDisplayName(batch.status)}
+                </span>
+              </div>
+              {batch.id === currentBatch.id && (
+                <Badge variant="outline" className="text-xs">
+                  Current
+                </Badge>
+              )}
+            </DropdownMenuItem>
+          ))}
+          <Link
+            href="/batches"
+            role="link"
+            className="flex items-center justify-center w-full text-sm font-medium text-primary cursor-pointer"
+          >
+            <DropdownMenuItem role="menuitem" className="w-full justify-center">
+              View All Batches
+            </DropdownMenuItem>
+          </Link>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }
