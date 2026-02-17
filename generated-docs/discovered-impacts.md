@@ -2,11 +2,23 @@
 
 This file tracks cross-story impacts discovered during implementation.
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-17
 
 ---
 
-*No active impacts. All previous impacts have been resolved.*
+## Active Impacts
+
+### Impact 3.1 (Medium): Approval Transfer on Deactivation
+**Source:** Epic 1 Story 3 - User Lifecycle Management
+**Affected Area:** `web/src/app/admin/users/users-client.tsx` - Deactivate modal
+
+When deactivating a user with an Approver role, the UI should show a dropdown to select another user to transfer pending approvals to. The API already supports `transferApprovalsTo` parameter in `DeactivateUserRequest` (see `web/src/lib/api/users.ts`), but the UI does not present this option.
+
+### Impact 3.2 (Low): Table Caption for Accessibility
+**Source:** Epic 1 Story 3 - User Lifecycle Management
+**Affected Area:** `web/src/app/admin/users/users-client.tsx` - User table
+
+The user data table should include a `<caption>` element for screen reader users to understand the table's purpose.
 
 ---
 

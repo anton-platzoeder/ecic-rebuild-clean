@@ -380,7 +380,7 @@ describe('User Administration Page', () => {
       });
 
       const filterButton = screen.getByRole('button', {
-        name: /inactive users/i,
+        name: /show deactivated/i,
       });
       await user.click(filterButton);
 
@@ -390,6 +390,11 @@ describe('User Administration Page', () => {
         );
         expect(screen.getByText(/left company/i)).toBeInTheDocument();
       });
+
+      // Button should now show "Show All" to toggle back
+      expect(
+        screen.getByRole('button', { name: /show all users/i }),
+      ).toBeInTheDocument();
     });
 
     it('filters by role', async () => {
@@ -1330,7 +1335,7 @@ describe('User Administration Page', () => {
       });
 
       const deactivateButton = screen.getAllByRole('button', {
-        name: /deactivate/i,
+        name: /^deactivate$/i,
       })[0];
       await user.click(deactivateButton);
 
@@ -1366,7 +1371,7 @@ describe('User Administration Page', () => {
       });
 
       const deactivateButton = screen.getAllByRole('button', {
-        name: /deactivate/i,
+        name: /^deactivate$/i,
       })[0];
       await user.click(deactivateButton);
 
@@ -1438,7 +1443,7 @@ describe('User Administration Page', () => {
       });
 
       const deactivateButton = screen.getAllByRole('button', {
-        name: /deactivate/i,
+        name: /^deactivate$/i,
       })[0];
       await user.click(deactivateButton);
 

@@ -503,7 +503,9 @@ export default function UsersClient() {
           <h1 className="text-2xl font-bold">User Administration</h1>
           {users && (
             <p className="text-muted-foreground">
-              Showing {activeCount} active users
+              {filterParams.isActive === false
+                ? `Showing ${users.items.length} deactivated users`
+                : `Showing ${activeCount} active users`}
             </p>
           )}
         </div>
@@ -553,11 +555,27 @@ export default function UsersClient() {
             />
           </div>
           <Button
-            variant="outline"
-            onClick={() => handleStatusFilter(false)}
-            aria-label="Inactive Users"
+            variant={filterParams.isActive === false ? 'default' : 'outline'}
+            onClick={() => {
+              if (filterParams.isActive === false) {
+                const rest = Object.fromEntries(
+                  Object.entries(filterParams).filter(
+                    ([key]) => key !== 'isActive',
+                  ),
+                );
+                setFilterParams(rest);
+                fetchUsers(rest);
+              } else {
+                handleStatusFilter(false);
+              }
+            }}
+            aria-label={
+              filterParams.isActive === false
+                ? 'Show All Users'
+                : 'Show Deactivated'
+            }
           >
-            Show Deactivated
+            {filterParams.isActive === false ? 'Show All' : 'Show Deactivated'}
           </Button>
           <div>
             <Select onValueChange={handleRoleFilter}>

@@ -142,7 +142,7 @@ describe('Workflow State Visualization', () => {
         createMockWorkflowStatus({ currentStage: 'Level2Pending' }),
       );
 
-      const { container } = render(<WorkflowClient batchId={1} />);
+      render(<WorkflowClient batchId={1} />);
 
       await waitFor(() => {
         const workflow = screen.getByLabelText(/workflow progress/i);
@@ -155,25 +155,24 @@ describe('Workflow State Visualization', () => {
         expect(screen.getByText('L3')).toBeInTheDocument();
         expect(screen.getByText('Published')).toBeInTheDocument();
 
-        // Check stage states
-        const completedStages = container.querySelectorAll(
-          // test-quality-ignore
-          '[data-stage-state="complete"]',
+        // Verify stage states via accessible title attributes
+        const dataPrepStage = screen.getByTitle(
+          /All required data must be collected/,
         );
-        expect(completedStages.length).toBeGreaterThanOrEqual(2); // Data Prep, L1
+        expect(dataPrepStage).toHaveAttribute('data-stage-state', 'complete');
 
-        const currentStage = container.querySelector(
-          // test-quality-ignore
-          '[data-stage-state="current"]',
-        );
-        expect(currentStage).toBeInTheDocument();
-        expect(currentStage?.textContent).toContain('L2');
+        const l1Stage = screen.getByTitle(/Operations approval/);
+        expect(l1Stage).toHaveAttribute('data-stage-state', 'complete');
 
-        const pendingStages = container.querySelectorAll(
-          // test-quality-ignore
-          '[data-stage-state="pending"]',
-        );
-        expect(pendingStages.length).toBeGreaterThanOrEqual(2); // L3, Published
+        const l2Stage = screen.getByTitle(/Portfolio Manager approval/);
+        expect(l2Stage).toHaveAttribute('data-stage-state', 'current');
+        expect(l2Stage.textContent).toContain('L2');
+
+        const l3Stage = screen.getByTitle(/Executive approval/);
+        expect(l3Stage).toHaveAttribute('data-stage-state', 'pending');
+
+        const publishedStage = screen.getByTitle(/Batch has been approved/);
+        expect(publishedStage).toHaveAttribute('data-stage-state', 'pending');
       });
     });
 
@@ -216,14 +215,13 @@ describe('Workflow State Visualization', () => {
         createMockWorkflowStatus({ currentStage: 'Level2Pending' }),
       );
 
-      const { container } = render(<WorkflowClient batchId={1} />);
+      render(<WorkflowClient batchId={1} />);
 
       await waitFor(() => {
-        const dataPrep = container.querySelector(
-          // test-quality-ignore
-          '[data-stage="DataPreparation"]',
+        const dataPrep = screen.getByTitle(
+          /All required data must be collected/,
         );
-        const level1 = container.querySelector('[data-stage="Level1Pending"]'); // test-quality-ignore
+        const level1 = screen.getByTitle(/Operations approval/);
 
         expect(dataPrep).toHaveAttribute('data-stage-state', 'complete');
         expect(level1).toHaveAttribute('data-stage-state', 'complete');
@@ -455,20 +453,14 @@ describe('Workflow State Visualization', () => {
         createMockWorkflowStatus({ currentStage: 'Level2Pending' }),
       );
 
-      const { container } = render(<WorkflowClient batchId={1} />);
+      render(<WorkflowClient batchId={1} />);
 
       await waitFor(() => {
         expect(screen.getByText('L1')).toBeInTheDocument();
       });
 
-      const level1Stage = container.querySelector(
-        // test-quality-ignore
-        '[data-stage="Level1Pending"]',
-      );
-      expect(level1Stage).toHaveAttribute(
-        'title',
-        expect.stringContaining('Operations approval'),
-      );
+      const level1Stage = screen.getByTitle(/Operations approval/);
+      expect(level1Stage).toBeInTheDocument();
     });
 
     it('shows Confirm Data Ready button when batch is in Data Preparation', async () => {

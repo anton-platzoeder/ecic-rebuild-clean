@@ -1,6 +1,6 @@
 # Project Progress: InvestInsight Portfolio Reporting Platform
 
-> Last updated: 2026-02-16
+> Last updated: 2026-02-17
 
 ## Summary
 
@@ -18,12 +18,12 @@
 ## Epic 1: Authentication, Authorization & User Management
 
 **Status: Done**
-All 8 stories implemented. Auth infrastructure, RBAC, user management, and audit logging are in place.
+All 8 stories implemented. Auth infrastructure, RBAC, user management, and audit logging are in place. A realignment pass is verifying TDD coverage across stories.
 
 - [x] Story 1 - User Authentication with AD/LDAP Integration
-  - Route: `/login` | Commit: `a6e6eb4`
+  - Route: `/login` | Commit: `af8c57d`
 - [x] Story 2 - Role-Based Dashboard Landing
-  - Route: `/` | Commit: `a435c08`
+  - Route: `/` | Commit: `f1eab94`
 - [x] Story 3 - User Lifecycle Management
   - Route: `/admin/users` | Commit: `4c1fc35`
 - [x] Story 4 - Role Assignment & Permission Management
@@ -109,7 +109,7 @@ Stories not yet scoped. Expected scope: three-level approval, rejection workflow
 Epic 1 (Auth/Users)  -->  Done
   |
   v
-Epic 2 (Batch Management)  -->  In Progress
+Epic 2 (Batch Management)  -->  In Progress (6/8)
   |
   v
 Epic 3 (Master Data)  -->  Not Started
