@@ -30,6 +30,7 @@ interface NavLink {
 const ALL_NAV_LINKS: NavLink[] = [
   { href: '/', label: 'Dashboard' },
   { href: '/batches', label: 'Batches' },
+  { href: '/master-data', label: 'Master Data' },
   { href: '/approvals/level-1', label: 'Approval L1' },
   { href: '/approvals/level-2', label: 'Approval L2' },
   { href: '/approvals/level-3', label: 'Approval L3' },

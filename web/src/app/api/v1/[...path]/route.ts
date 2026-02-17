@@ -450,6 +450,297 @@ const MOCK_REPORT_BATCHES: {
   },
 ];
 
+const MOCK_INSTRUMENTS = [
+  {
+    id: 1,
+    isin: 'US5949181045',
+    instrumentCode: 'MSFT',
+    bloombergTicker: 'MSFT US Equity',
+    cusip: '594918104',
+    sedol: '2588173',
+    name: 'Microsoft Corporation',
+    shortName: 'MSFT',
+    description: 'Common stock of Microsoft Corporation',
+    ticker: 'MSFT',
+    parentCompanyName: 'Microsoft Corporation',
+    securityType: 'Equity',
+    securitySubType: 'Common Stock',
+    marketSector: 'Technology',
+    securityClass: 'Large Cap',
+    issuerIndustry: 'Software',
+    countryId: 1,
+    quotedCurrencyId: 1,
+    amountIssued: null,
+    couponType: null,
+    coupon: null,
+    couponFrequency: null,
+    issueDate: '1986-03-13',
+    maturityDate: null,
+    issuerName: 'Microsoft Corporation',
+    issuerCode: 'MSFT',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-12-01T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United States',
+    currencyCode: 'USD',
+    isComplete: true,
+    missingData: [],
+  },
+  {
+    id: 2,
+    isin: 'US0378331005',
+    instrumentCode: 'AAPL',
+    bloombergTicker: 'AAPL US Equity',
+    cusip: '037833100',
+    sedol: '2046251',
+    name: 'Apple Inc.',
+    shortName: 'AAPL',
+    description: 'Common stock of Apple Inc.',
+    ticker: 'AAPL',
+    parentCompanyName: 'Apple Inc.',
+    securityType: 'Equity',
+    securitySubType: 'Common Stock',
+    marketSector: 'Technology',
+    securityClass: 'Large Cap',
+    issuerIndustry: 'Consumer Electronics',
+    countryId: 1,
+    quotedCurrencyId: 1,
+    amountIssued: null,
+    couponType: null,
+    coupon: null,
+    couponFrequency: null,
+    issueDate: '1980-12-12',
+    maturityDate: null,
+    issuerName: 'Apple Inc.',
+    issuerCode: 'AAPL',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-12-01T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United States',
+    currencyCode: 'USD',
+    isComplete: true,
+    missingData: [],
+  },
+  {
+    id: 3,
+    isin: 'GB00BH4HKS39',
+    instrumentCode: 'VOD',
+    bloombergTicker: 'VOD LN Equity',
+    cusip: null,
+    sedol: 'BH4HKS3',
+    name: 'Vodafone Group Plc',
+    shortName: 'VOD',
+    description: 'Common stock of Vodafone Group',
+    ticker: 'VOD',
+    parentCompanyName: 'Vodafone Group Plc',
+    securityType: 'Equity',
+    securitySubType: 'Common Stock',
+    marketSector: 'Telecommunications',
+    securityClass: 'Large Cap',
+    issuerIndustry: 'Telecom',
+    countryId: 2,
+    quotedCurrencyId: 2,
+    amountIssued: null,
+    couponType: null,
+    coupon: null,
+    couponFrequency: null,
+    issueDate: '1988-10-11',
+    maturityDate: null,
+    issuerName: 'Vodafone Group Plc',
+    issuerCode: 'VOD',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-11-15T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United Kingdom',
+    currencyCode: 'GBP',
+    isComplete: false,
+    missingData: ['Credit Rating', 'Beta'],
+  },
+  {
+    id: 4,
+    isin: 'US912828Z879',
+    instrumentCode: 'UST-10Y',
+    bloombergTicker: 'T 2.5 02/15/35 Govt',
+    cusip: '912828Z87',
+    sedol: null,
+    name: 'US Treasury Note 2.5% 2035',
+    shortName: 'UST 2.5 2035',
+    description: 'US Treasury Note maturing Feb 2035',
+    ticker: null,
+    parentCompanyName: null,
+    securityType: 'Fixed Income',
+    securitySubType: 'Government Bond',
+    marketSector: 'Government',
+    securityClass: 'Sovereign',
+    issuerIndustry: null,
+    countryId: 1,
+    quotedCurrencyId: 1,
+    amountIssued: 50000000000,
+    couponType: 'Fixed',
+    coupon: 2.5,
+    couponFrequency: 'Semi-Annual',
+    issueDate: '2025-02-15',
+    maturityDate: '2035-02-15',
+    issuerName: 'US Treasury',
+    issuerCode: 'UST',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-12-01T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United States',
+    currencyCode: 'USD',
+    isComplete: true,
+    missingData: [],
+  },
+  {
+    id: 5,
+    isin: 'ZAG000106998',
+    instrumentCode: 'RSA-R186',
+    bloombergTicker: 'SAGB 10.5 12/21/26 Govt',
+    cusip: null,
+    sedol: null,
+    name: 'South Africa Government Bond R186',
+    shortName: 'RSA R186',
+    description: 'South African Government Bond R186',
+    ticker: null,
+    parentCompanyName: null,
+    securityType: 'Fixed Income',
+    securitySubType: 'Government Bond',
+    marketSector: 'Government',
+    securityClass: 'Sovereign',
+    issuerIndustry: null,
+    countryId: 3,
+    quotedCurrencyId: 3,
+    amountIssued: 25000000000,
+    couponType: 'Fixed',
+    coupon: 10.5,
+    couponFrequency: 'Semi-Annual',
+    issueDate: '2006-12-21',
+    maturityDate: '2026-12-21',
+    issuerName: 'Republic of South Africa',
+    issuerCode: 'RSA',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-11-01T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'South Africa',
+    currencyCode: 'ZAR',
+    isComplete: false,
+    missingData: ['Duration', 'Modified Duration'],
+  },
+  {
+    id: 6,
+    isin: 'XS2345678901',
+    instrumentCode: 'BARC-5Y',
+    bloombergTicker: 'BARC 3.25 09/15/28 Corp',
+    cusip: null,
+    sedol: 'BK1LM23',
+    name: 'Barclays Plc 3.25% 2028',
+    shortName: 'BARC 3.25 2028',
+    description: 'Barclays corporate bond maturing Sep 2028',
+    ticker: null,
+    parentCompanyName: 'Barclays Plc',
+    securityType: 'Fixed Income',
+    securitySubType: 'Corporate Bond',
+    marketSector: 'Financials',
+    securityClass: 'Investment Grade',
+    issuerIndustry: 'Banking',
+    countryId: 2,
+    quotedCurrencyId: 2,
+    amountIssued: 1500000000,
+    couponType: 'Fixed',
+    coupon: 3.25,
+    couponFrequency: 'Annual',
+    issueDate: '2023-09-15',
+    maturityDate: '2028-09-15',
+    issuerName: 'Barclays Plc',
+    issuerCode: 'BARC',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-12-01T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United Kingdom',
+    currencyCode: 'GBP',
+    isComplete: false,
+    missingData: ['Credit Rating'],
+  },
+  {
+    id: 7,
+    isin: null,
+    instrumentCode: 'USD-CASH',
+    bloombergTicker: null,
+    cusip: null,
+    sedol: null,
+    name: 'US Dollar Cash',
+    shortName: 'USD Cash',
+    description: 'Cash position in US dollars',
+    ticker: null,
+    parentCompanyName: null,
+    securityType: 'Cash',
+    securitySubType: 'Currency',
+    marketSector: null,
+    securityClass: null,
+    issuerIndustry: null,
+    countryId: 1,
+    quotedCurrencyId: 1,
+    amountIssued: null,
+    couponType: null,
+    coupon: null,
+    couponFrequency: null,
+    issueDate: null,
+    maturityDate: null,
+    issuerName: null,
+    issuerCode: null,
+    isCashEquivalent: true,
+    lastChangedUser: 'system',
+    validFrom: '2025-01-01T00:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United States',
+    currencyCode: 'USD',
+    isComplete: true,
+    missingData: [],
+  },
+  {
+    id: 8,
+    isin: 'US4592001014',
+    instrumentCode: 'IBM',
+    bloombergTicker: 'IBM US Equity',
+    cusip: '459200101',
+    sedol: '2005973',
+    name: 'International Business Machines Corp.',
+    shortName: 'IBM',
+    description: 'Common stock of IBM Corporation',
+    ticker: 'IBM',
+    parentCompanyName: 'IBM Corporation',
+    securityType: 'Equity',
+    securitySubType: 'Common Stock',
+    marketSector: 'Technology',
+    securityClass: 'Large Cap',
+    issuerIndustry: 'IT Services',
+    countryId: 1,
+    quotedCurrencyId: 1,
+    amountIssued: null,
+    couponType: null,
+    coupon: null,
+    couponFrequency: null,
+    issueDate: '1911-06-16',
+    maturityDate: null,
+    issuerName: 'IBM Corporation',
+    issuerCode: 'IBM',
+    isCashEquivalent: false,
+    lastChangedUser: 'analyst',
+    validFrom: '2025-12-01T10:00:00Z',
+    validTo: '9999-12-31T23:59:59Z',
+    countryName: 'United States',
+    currencyCode: 'USD',
+    isComplete: false,
+    missingData: ['Beta', 'Credit Rating'],
+  },
+];
+
 function getUserFromToken(request: NextRequest): MockUser | null {
   const auth = request.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return null;
@@ -1034,6 +1325,78 @@ export async function GET(request: NextRequest) {
         totalPortfolios: 12,
       },
     ]);
+  }
+
+  // GET /instruments/export
+  if (path === 'instruments/export') {
+    return new NextResponse('mock-instruments-export', {
+      status: 200,
+      headers: { 'Content-Type': 'application/octet-stream' },
+    });
+  }
+
+  // GET /instruments
+  if (seg[0] === 'instruments' && seg.length === 1) {
+    const url = new URL(request.url);
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const secType = url.searchParams.get('securityType');
+    const cId = url.searchParams.get('countryId');
+    const missingRatingsParam = url.searchParams.get('missingRatings');
+    const missingRiskParam = url.searchParams.get('missingRiskMetrics');
+    const missingOnlyParam = url.searchParams.get('missingOnly');
+    const page = Number(url.searchParams.get('page')) || 1;
+    const pageSize = Number(url.searchParams.get('pageSize')) || 10;
+
+    let filtered = [...MOCK_INSTRUMENTS];
+
+    if (search) {
+      filtered = filtered.filter(
+        (i) =>
+          (i.isin && i.isin.toLowerCase().includes(search)) ||
+          (i.name && i.name.toLowerCase().includes(search)) ||
+          (i.issuerName && i.issuerName.toLowerCase().includes(search)),
+      );
+    }
+    if (secType) {
+      filtered = filtered.filter((i) => i.securityType === secType);
+    }
+    if (cId) {
+      filtered = filtered.filter((i) => i.countryId === Number(cId));
+    }
+    if (missingRatingsParam === 'true') {
+      filtered = filtered.filter(
+        (i) =>
+          i.missingData &&
+          i.missingData.some((d: string) => d.toLowerCase().includes('rating')),
+      );
+    }
+    if (missingRiskParam === 'true') {
+      filtered = filtered.filter(
+        (i) =>
+          i.missingData &&
+          i.missingData.some(
+            (d: string) =>
+              d.toLowerCase().includes('beta') ||
+              d.toLowerCase().includes('duration'),
+          ),
+      );
+    }
+    if (missingOnlyParam === 'true') {
+      filtered = filtered.filter((i) => !i.isComplete);
+    }
+
+    const start = (page - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+
+    return json({
+      items,
+      meta: {
+        page,
+        pageSize,
+        totalItems: filtered.length,
+        totalPages: Math.ceil(filtered.length / pageSize),
+      },
+    });
   }
 
   return json({ message: `Mock API: GET /${path} not implemented` }, 404);

@@ -207,15 +207,15 @@ async function main() {
     await login(page, 'analyst', 'password');
     await page.waitForTimeout(1000);
     await step(page,
-      'Logged in as Analyst (Emily Johnson). Notice the nav bar now shows Dashboard and Batches only - no Admin pages. Role-based access control in action.',
+      'Logged in as Analyst (Emily Johnson). Notice the nav bar now shows Dashboard, Batches, and Master Data - no Admin pages. Role-based access control in action.',
       'STEP 8: Analyst dashboard'
     );
 
     await page.locator('a:has-text("Batches"), nav >> text=Batches').first().click();
     await page.waitForTimeout(1000);
     await step(page,
-      'Batch Management - Lists all report batches. The January 2026 batch is in "Data Preparation" status. New batches can only be created when all existing ones are Approved.',
-      'STEP 9: Batch list'
+      'Batch Management - Notice the lock/unlock icons on each batch card. The January 2026 batch shows an unlock icon (editable in Data Preparation). Approved batches show a lock icon. Hover over any icon for a tooltip explaining the lock state.',
+      'STEP 9: Batch list with lock icons'
     );
 
     // Click on the January 2026 batch card (scoped to <article> to avoid the nav batch switcher)
@@ -257,8 +257,53 @@ async function main() {
     }
 
     await step(page,
-      'Batch confirmed! The status has moved to "Level 1 Pending". The batch is now locked - no more edits. It enters the 3-level approval pipeline: Operations \u2192 Portfolio Manager \u2192 Executive.',
-      'STEP 13: Batch confirmed, moved to L1'
+      'Batch confirmed! The status has moved to "Level 1 Pending". Notice the header batch switcher now shows a lock icon and "read-only" badge - the batch is locked system-wide. No data modifications are allowed during the approval pipeline.',
+      'STEP 13: Batch confirmed, lock icon in header'
+    );
+
+    // -----------------------------------------------------------------------
+    // PART 3B: Master Data - Instruments (NEW)
+    // -----------------------------------------------------------------------
+    await step(page,
+      'Now let\'s explore the Instrument Master Data page. This is where analysts manage the securities reference data used across all batches.',
+      'STEP 14: Navigating to Master Data'
+    );
+
+    await page.locator('a:has-text("Master Data"), nav >> text=Master Data').first().click();
+    await page.waitForTimeout(1500);
+    await step(page,
+      'Instrument Master Data - Lists all securities with ISIN, name, type, country, and data completeness indicators. Green "Complete" badges mean all required fields are present. Amber "Incomplete" badges highlight missing data like Credit Ratings or Risk Metrics.',
+      'STEP 15: Instruments listing'
+    );
+
+    // Demonstrate search
+    const searchInput = page.locator('input[placeholder*="search by isin"]');
+    if (await searchInput.count() > 0) {
+      await searchInput.fill('Apple');
+      await page.waitForTimeout(500);
+    }
+    await step(page,
+      'Live Search - Debounced search instantly filters instruments by ISIN, name, or issuer. Results update as the analyst types. Here we searched for "Apple" and the list filtered to matching instruments.',
+      'STEP 16: Search demo'
+    );
+
+    // Clear search
+    if (await searchInput.count() > 0) {
+      await searchInput.clear();
+      await page.waitForTimeout(500);
+    }
+
+    // Scroll up to show the action buttons
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    await page.waitForTimeout(300);
+    await step(page,
+      'Lock-Aware Controls - Notice the "Add New Instrument" button shows a lock icon and is disabled. "Bulk Import" is also disabled. Because the batch was confirmed for approval, all data modifications are blocked system-wide until the approval pipeline completes.',
+      'STEP 17: Lock-aware buttons'
+    );
+
+    await step(page,
+      'Advanced Filters - Analysts can filter by Security Type, Country, and data completeness. The "Missing Ratings" and "Missing Risk Metrics" checkboxes help identify data quality gaps that need attention before the next batch submission.',
+      'STEP 18: Filters overview'
     );
 
     // -----------------------------------------------------------------------
@@ -266,7 +311,7 @@ async function main() {
     // -----------------------------------------------------------------------
     await step(page,
       'Now let\'s see the approval experience. We\'ll log in as the Level 1 Approver (Operations). Notice how each approver only sees their own approval level.',
-      'STEP 14: Switching to Approver L1'
+      'STEP 19: Switching to Approver L1'
     );
 
     await logout(page);
@@ -275,7 +320,7 @@ async function main() {
     await page.waitForTimeout(1000);
     await step(page,
       'Logged in as Approver L1 (David Kim). The nav shows only Dashboard and Approval L1 - strict role separation ensures segregation of duties. The Analyst cannot approve their own batch.',
-      'STEP 15: Approver L1 dashboard'
+      'STEP 20: Approver L1 dashboard'
     );
 
     const approvalLink = page.locator('a:has-text("Approval"), nav >> text=Approval').first();
@@ -285,7 +330,7 @@ async function main() {
     }
     await step(page,
       'Level 1 Approval Review - The Operations approver reviews file completeness and data validation. They can approve (advancing to L2) or reject (sending back to Data Preparation). This UI is the next epic to be built.',
-      'STEP 16: Approval L1 page'
+      'STEP 21: Approval L1 page'
     );
 
     // -----------------------------------------------------------------------
@@ -293,7 +338,7 @@ async function main() {
     // -----------------------------------------------------------------------
     await step(page,
       'Let\'s quickly show the other approval levels to demonstrate role isolation.',
-      'STEP 17: Switching to Approver L2'
+      'STEP 22: Switching to Approver L2'
     );
 
     await logout(page);
@@ -308,7 +353,7 @@ async function main() {
     }
     await step(page,
       'Level 2 Approval (Portfolio Manager) - Lisa Wang only sees her approval level. She reviews holdings reasonableness and performance results before approving.',
-      'STEP 18: Approver L2 page'
+      'STEP 23: Approver L2 page'
     );
 
     await logout(page);
@@ -323,14 +368,14 @@ async function main() {
     }
     await step(page,
       'Level 3 Approval (Executive) - James Thompson gives the final sign-off before publication. Three independent reviewers must approve before any report goes live.',
-      'STEP 19: Approver L3 page'
+      'STEP 24: Approver L3 page'
     );
 
     // -----------------------------------------------------------------------
     // WRAP UP
     // -----------------------------------------------------------------------
     await step(page,
-      'Demo Complete! Summary: Role-based access control, 5-stage workflow pipeline, data validation with quality gates, batch locking, full audit trail, and 3-level approval separation. Next phase: approval review UI.',
+      'Demo Complete! Summary: Role-based access control, 5-stage workflow pipeline, data validation with quality gates, batch lock icons with visual indicators, instrument master data management with search and filtering, lock-aware controls that prevent edits during approvals, full audit trail, and 3-level approval separation.',
       'DEMO COMPLETE'
     );
 

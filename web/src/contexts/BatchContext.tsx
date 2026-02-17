@@ -32,6 +32,7 @@ import { useToast } from '@/contexts/ToastContext';
 interface BatchContextValue {
   activeBatchId: number | null;
   currentBatch: ReportBatch | null;
+  activeBatch: ReportBatch | null; // Alias for currentBatch (for test compatibility)
   isReadOnly: boolean;
   isLoading: boolean;
   switchBatch: (id: number) => Promise<void>;
@@ -135,6 +136,7 @@ export function BatchProvider({ children }: BatchProviderProps) {
       value={{
         activeBatchId,
         currentBatch,
+        activeBatch: currentBatch, // Alias for test compatibility
         isReadOnly,
         isLoading,
         switchBatch,
